@@ -13,7 +13,7 @@
 	<artifactId>schedule-management</artifactId>
 	<name>Schedule management</name>
 	<packaging>bundle</packaging>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.0.0</version>
 
 	<repositories>
 		<repository>
