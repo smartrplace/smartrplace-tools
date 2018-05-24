@@ -384,6 +384,7 @@ class ScheduleMgmtPage {
 		creatorTriggers = new PageSnippet(page, "createTriggers", true);
 		creatorTriggers.append(createMemorySchedule, null).append(openScheduleCreationPopup, null).append(openSlotsCreationButton, null);
 		
+		// FIXME expensive resource operation on start
 		this.parentTypeSelector = new ResourceTypeDropdown(page, "parentTypeSelector", (List) dataSources.logData.getHighLevelOptions());
 		parentTypeSelector.setDefaultAddEmptyOption(true);
 		this.parentResourceSelector = new ResourceDropdown<SingleValueResource>(page, "parentResourceSelector", false, SingleValueResource.class, 
