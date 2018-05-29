@@ -82,6 +82,7 @@ public class ScheduleManagementApp implements Application {
 
 	private DataSourceFactory dataSources;
 	private FileBasedDataGeneratorFactory fileBasedDataSources;
+	// TODO migrate to OSGi 6 annotations, use ComponentServiceObjects -> do not enforce class loading
 	private final Set<DataProvider<?>> dataSources2 = Collections.synchronizedSet(new HashSet<>(8));
 	private final Set<DataGenerator> sourceQueue = new HashSet<>(8);
 	private final Set<DataProvider<?>> sourceQueue2 = new HashSet<>(8);

@@ -741,9 +741,32 @@ class ScheduleMgmtPage {
 		
 //		this.fileImportReplaceCheckbox = new Checkbox(page, "fileImportReplaceCheckbox");
 //		fileImportReplaceCheckbox.setDefaultList(Collections.singletonMap("Replace existing values in time range?", false));
+		fileImportWaiter = new FileUploadLatch(page, "fileImportLatch") {
+
+			private static final long serialVersionUID = 1L;
+			
+			@Override
+			public void onPOSTComplete(String data, OgemaHttpRequest req) {
+				try {
+					boolean success = this.await(30, TimeUnit.SECONDS, req);
+					if (!success) {
+						alert.showAlert("File upload not completed yet", false, req);
+						return;
+					}
+					String issues = getIssues(req);
+					if (issues == null)
+						alert.showAlert("Upload successful", true, req);
+					else
+						alert.showAlert(issues, false, req);
+				} catch (InterruptedException ignore) {
+				}
+			}
+			
+		};
 		this.fileImportUpload = new FileUpload(page, "fileImportUpload", am) {
 
 			private static final long serialVersionUID = 1L;
+			private final FileUploadListener<FileImportContext> listener = new FileImportListener(fileImportWaiter);
 			
 			@Override
 			public void onPrePOST(String data, OgemaHttpRequest req) {
@@ -773,35 +796,13 @@ class ScheduleMgmtPage {
 				final boolean endMover = fileImportReplaceCheckbox.moveEndHere(req);
 				final int repeat = fileImportRepeatTimes.getNumericalValue(req);
 //				boolean replace = fileImportReplaceCheckbox.getCheckboxList(req).values().iterator().next();
-				registerListener(new FileImportListener(fileImportWaiter), new FileImportContext(fgen, (TimeSeries) rots, replace, option, 
+				registerListener(listener, new FileImportContext(fgen, (TimeSeries) rots, replace, option, 
 						startMover, endMover, am.getFrameworkTime(), repeat), req);
 				fileImportWaiter.reset(1, req);
 			}
 			
 		};
 		
-		fileImportWaiter = new FileUploadLatch(page, "fileImportLatch") {
-
-			private static final long serialVersionUID = 1L;
-			
-			@Override
-			public void onPOSTComplete(String data, OgemaHttpRequest req) {
-				try {
-					boolean success = this.await(30, TimeUnit.SECONDS, req);
-					if (!success) {
-						alert.showAlert("File upload not completed yet", false, req);
-						return;
-					}
-					String issues = getIssues(req);
-					if (issues == null)
-						alert.showAlert("Upload successful", true, req);
-					else
-						alert.showAlert(issues, false, req);
-				} catch (InterruptedException ignore) {
-				}
-			}
-			
-		};
 		
 		this.loadFileDataSubmit = new Button(page, "loadFileDataSubmit","Upload");
 		this.fileImportDescription = new Label(page, "fileImportDescription") {
