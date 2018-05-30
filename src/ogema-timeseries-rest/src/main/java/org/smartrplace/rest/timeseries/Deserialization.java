@@ -18,6 +18,7 @@ package org.smartrplace.rest.timeseries;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Collections;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
@@ -25,9 +26,11 @@ import org.ogema.core.administration.FrameworkClock;
 import org.ogema.core.channelmanager.measurements.FloatValue;
 import org.ogema.core.channelmanager.measurements.Quality;
 import org.ogema.core.channelmanager.measurements.SampledValue;
+import org.ogema.core.timeseries.ReadOnlyTimeSeries;
+import org.ogema.core.timeseries.TimeSeries;
 import org.ogema.recordeddata.DataRecorderException;
+import org.ogema.recordeddata.RecordedDataStorage;
 import org.slf4j.LoggerFactory;
-import org.smartrplace.logging.fendodb.FendoTimeSeries;
 import org.smartrplace.logging.fendodb.tools.config.FendodbSerializationFormat;
 
 class Deserialization {
@@ -40,7 +43,7 @@ class Deserialization {
         <value>12.0</value>
        </entry>
 	 */
-	static boolean deserializeValues(final Reader reader, final FendoTimeSeries timeSeries, final FendodbSerializationFormat format, 
+	static boolean deserializeValues(final Reader reader, final ReadOnlyTimeSeries timeSeries, final FendodbSerializationFormat format, 
 			final HttpServletResponse resp) throws IOException {
 		final Deserializer deserializer = format == FendodbSerializationFormat.XML ? new XmlDeserializer(reader, timeSeries, resp) :
 				format == FendodbSerializationFormat.JSON ? new JsonDeserializer(reader, timeSeries, resp) :
@@ -51,7 +54,7 @@ class Deserialization {
 		return result;
 	}
 	
-	static boolean deserializeValue(final Reader reader, final FendoTimeSeries timeSeries, final FendodbSerializationFormat format, 
+	static boolean deserializeValue(final Reader reader, final ReadOnlyTimeSeries timeSeries, final FendodbSerializationFormat format, 
 			final FrameworkClock clock, final HttpServletResponse resp) throws IOException {
 		final char[] arr = new char[256];
 		final StringBuilder buffer = new StringBuilder();
@@ -127,7 +130,10 @@ class Deserialization {
 				resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Timeseries contains later timestamps");
 				return false;
 			}
-			timeSeries.insertValue(new SampledValue(new FloatValue(f), t, q));
+			if (timeSeries instanceof RecordedDataStorage)
+				((RecordedDataStorage) timeSeries).insertValue(new SampledValue(new FloatValue(f), t, q));
+			else if (timeSeries instanceof TimeSeries)
+				((TimeSeries) timeSeries).addValues(Collections.singletonList(new SampledValue(new FloatValue(f), t, q)));
 			resp.setStatus(HttpServletResponse.SC_OK);
 			return true;
 		} catch (NumberFormatException e) {

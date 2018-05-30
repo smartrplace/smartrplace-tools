@@ -1,0 +1,81 @@
+Example requests for a local OGEMA instance with default 'rest' user.
+
+-----------------
+GET existing time series
+-----------------
+
+GET all schedules:
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=find&option=resource_time_series:schedule
+
+GET all online time series:
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=find&option=resource_time_series:onlinedata
+
+GET all log data:
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=find&option=resource_time_series:logdata
+
+GET log data and schedules:
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=find&option=resource_time_series:logdata&option=resource_time_series:schedule
+
+GET all FendoDb timeseries in a specific database (here: data/slotsdb, the default OGEMA log database):
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=fendodbProvider&target=find&option=dboption:data/slotsdb
+
+-------------
+GET data
+-------------
+
+GET full schedule data:
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=data&option=resource_time_series:schedule&option=resource_leaf:Schedule::path/to/schedule
+
+GET schedule data in a certain time range (specify time in milliseconds since epoch, or in a format like yyyy(-MM(-dd(THH(:mm(:ss(:SSS)))))), where brackets denot optional parts), with a specified maximum number of values:
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=data&option=resource_time_series:schedule&option=resource_leaf:Schedule::path/to/schedule&start=2018-05-30T23:29&end=2019-01-01&max=1000
+
+GET schedule data at a specified sampling rate (interval in milliseconds)
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=data&option=resource_time_series:schedule&option=resource_leaf:Schedule::path/to/schedule&interval=60000&max=1000
+
+------------
+GET time series size:
+------------
+
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=size&option=resource_time_series:schedule&option=resource_leaf:Schedule::path/to/schedule
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=size&option=resource_time_series:schedule&option=resource_leaf:Schedule::path/to/schedule&start=2018-05-30T23:29&end=2019-01-01
+
+------------
+GET next or previous value
+------------
+
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=nextvalue&time=2018-05-30&option=resource_time_series:schedule&option=resource_leaf:Schedule::path/to/schedule&datetimeformat=yyyy-MM-dd'T'HH:mm:ss
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=previousvalue&time=2019-05-30&option=resource_time_series:schedule&option=resource_leaf:Schedule::path/to/schedule&datetimeformat=yyyy-MM-dd'T'HH:mm:ss
+
+------------
+GET statistics
+------------
+
+For a single time series
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=stats&provider=avg&provider=cnt&option=resource_time_series:schedule&option=resource_leaf:Schedule::path/to/schedule
+
+For multiple specific time series:
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=stats&provider=max&provider=maxT&option=resource_time_series:schedule&option=resource_leaf:Schedule::path/to/schedule&option=resource_leaf:Schedule::path/to/schedule2
+
+For all schedules (cf. target=find)
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=stats&provider=min&provider=minT&option=resource_time_series:schedule
+
+----------
+POST values to time series
+----------
+
+Single value
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=value&option=resource_time_series:schedule&option=resource_leaf:Schedule::path/to/schedule
+ 
+with body
+
+<entry><value>32.3</value><time>1527720201000</time></entry>
+
+Multiple values
+https://localhost:8443/rest/timeseries?user=rest&pw=rest&provider=resourceDataProvider&target=values&option=resource_time_series:schedule&option=resource_leaf:Schedule::path/to/schedule
+ 
+with body
+
+<entries>
+	<entry><value>33.3</value><time>1527720202000</time></entry>
+	<entry><value>34.3</value><time>1527720202000</time></entry>
+</entries>

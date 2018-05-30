@@ -28,8 +28,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.ogema.core.channelmanager.measurements.FloatValue;
 import org.ogema.core.channelmanager.measurements.Quality;
 import org.ogema.core.channelmanager.measurements.SampledValue;
+import org.ogema.core.timeseries.ReadOnlyTimeSeries;
+import org.ogema.core.timeseries.TimeSeries;
 import org.ogema.recordeddata.DataRecorderException;
-import org.smartrplace.logging.fendodb.FendoTimeSeries;
+import org.ogema.recordeddata.RecordedDataStorage;
 
 abstract class Deserializer {
 	
@@ -38,13 +40,13 @@ abstract class Deserializer {
 	static final long MAX_SIZE = 1024 * 1024; // -> ~ 25000 SampledValues with json
 	private final Reader reader;
 	final HttpServletResponse resp;
-	final FendoTimeSeries timeSeries;
+	final ReadOnlyTimeSeries  timeSeries;
 	final char[] partial = new char[1024];
 	final char[] arr = new char[1024];
 	final List<SampledValue> values = new ArrayList<>();
 	Long latest;
 	
-	Deserializer(Reader reader, FendoTimeSeries timeSeries, HttpServletResponse resp) {
+	Deserializer(Reader reader, ReadOnlyTimeSeries timeSeries, HttpServletResponse resp) {
 		this.reader = reader;
 		this.resp = resp;
 		this.timeSeries  =timeSeries;
@@ -73,11 +75,15 @@ abstract class Deserializer {
 					resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Time ordering invalid");
 					return false;
 				}
-				try {
-					timeSeries.insertValues(values);
-				} catch (DataRecorderException e) {
-					resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to write data to time series");
-					return false;
+				if (timeSeries instanceof RecordedDataStorage) {
+					try {
+						((RecordedDataStorage) timeSeries).insertValues(values);
+					} catch (DataRecorderException e) {
+						resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to write data to time series");
+						return false;
+					}
+				} else if (timeSeries instanceof TimeSeries) {
+					((TimeSeries) timeSeries).addValues(values);
 				}
 				values.clear();
 				latest = last.getTimestamp();

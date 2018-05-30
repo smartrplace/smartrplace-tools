@@ -20,9 +20,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -40,6 +41,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.ogema.core.administration.FrameworkClock;
 import org.ogema.core.channelmanager.measurements.SampledValue;
 import org.ogema.core.timeseries.ReadOnlyTimeSeries;
+import org.ogema.core.timeseries.TimeSeries;
+import org.ogema.recordeddata.RecordedDataStorage;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -158,7 +161,8 @@ public class TimeseriesServlet extends HttpServlet {
     	return useService(service, consumer);
     }
     
-    private static List<ReadOnlyTimeSeries> extractTimeSeries(final HttpServletRequest req, final HttpServletResponse resp, final DataProvider<?> provider) throws IOException {
+    // 
+    private static Map<ReadOnlyTimeSeries, String>  extractTimeSeries(final HttpServletRequest req, final HttpServletResponse resp, final DataProvider<?> provider) throws IOException {
 		final LinkingOption[] opts = provider.selectionOptions();
 		if (opts == null) {
 			resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Provider does not provide selection options");
@@ -166,10 +170,15 @@ public class TimeseriesServlet extends HttpServlet {
 		}
     	final String[] options0 = req.getParameterValues(Parameters.PARAM_SELECTION_OPTION);
     	final String[] options = options0 != null ? options0  :EMPTY_OPTS;
-		final List<Collection<SelectionItem>> items = new ArrayList<>(opts.length); 
+		final Map<LinkingOption, Collection<SelectionItem>> items = new HashMap<>(opts.length); 
 		final List<SelectionItem> lastItems = Arrays.stream(opts)
 			.map(opt -> {
-				final List<SelectionItem> selItems = opt.getOptions(items);
+				final LinkingOption[] deps = opt.dependencies();
+				final List<Collection<SelectionItem>> relevantItems = deps == null ? null : Arrays.stream(deps)
+						.map(items::get)
+						.map(collection -> collection != null ? collection : Collections.<SelectionItem> emptyList())
+						.collect(Collectors.toList());
+				final List<SelectionItem> selItems = opt.getOptions(relevantItems);
 				final String id = opt.id();
 				List<SelectionItem> selectedItems = Arrays.stream(options)
 					.filter(o -> o.startsWith(id + ":"))
@@ -179,74 +188,29 @@ public class TimeseriesServlet extends HttpServlet {
 				if (selectedItems.isEmpty() && opt instanceof TerminalOption<?>) {
 					selectedItems = selItems;
 				}
-				items.add(selectedItems);
+				items.put(opt, selectedItems);
 				return selectedItems;
 			}).reduce((a,b) -> b).orElse(null);
 		if (lastItems == null)
 			return null;
 		final TerminalOption<? extends ReadOnlyTimeSeries> terminal = provider.getTerminalOption();
 		return lastItems.stream()
-			.map(item -> terminal.getElement(item))
-			.collect(Collectors.toList());
+				.collect(Collectors.toMap(terminal::getElement, SelectionItem::id));
     }
     
-    private static List<String> extractTimeSeriesIds(final HttpServletRequest req, final HttpServletResponse resp, 
-    		final DataProvider<?> provider) throws IOException {
-		final LinkingOption[] opts = provider.selectionOptions();
-		if (opts == null) {
-			resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Provider does not provide selection options");
-			return null;
-		}
-    	final String[] options0 = req.getParameterValues(Parameters.PARAM_SELECTION_OPTION);
-    	final String[] options = options0 != null ? options0  :EMPTY_OPTS;
-		final List<Collection<SelectionItem>> items = new ArrayList<>(opts.length); 
-		final List<SelectionItem> lastItems = Arrays.stream(opts)
-			.map(opt -> {
-				final List<SelectionItem> selItems = opt.getOptions(items);
-				final String id = opt.id();
-				List<SelectionItem>  selectedItems = Arrays.stream(options)
-						.filter(o -> o.startsWith(id + ":"))
-						.map(o -> selItems.stream().filter(item -> item.id().equalsIgnoreCase(o.substring(id.length() + 1))).findAny().orElse(null))
-						.filter(it -> it != null)
-						.collect(Collectors.toList());
-				if (selectedItems.isEmpty() && opt instanceof TerminalOption<?>) {
-					selectedItems = selItems;
-				}
-				items.add(selectedItems);
-				return selectedItems;
-			}).reduce((a,b) -> b).orElse(null);
-		if (lastItems == null) {
-			resp.sendError(HttpServletResponse.SC_NOT_FOUND);
-			return null;
-		}
-		return lastItems.stream()
-			.map(item -> item.id())
-			.collect(Collectors.toList());
-    }
-    
-    private ReadOnlyTimeSeries extractSingleTimeseries(final HttpServletRequest req, final HttpServletResponse resp, final DataProvider<?> provider) throws IOException {
-    	final List<ReadOnlyTimeSeries> list = extractTimeSeries(req, resp, provider);
+    // entry time series -> id
+    private Map.Entry<ReadOnlyTimeSeries, String> extractSingleTimeseries(final HttpServletRequest req, final HttpServletResponse resp, final DataProvider<?> provider) throws IOException {
+    	final Map<ReadOnlyTimeSeries, String> list = extractTimeSeries(req, resp, provider);
     	if (list == null)
     		return null;
     	if (list.isEmpty()) {
     		resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Timeseries not found");
     		return null;
     	}
-    	return list.get(0);
+    	return list.entrySet().iterator().next();
     }
     
-    private ReadOnlyTimeSeries getSingleTimeseries(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-    	final List<ReadOnlyTimeSeries> list = getMultipleTimeseries(req, resp);
-    	if (list == null)
-    		return null;
-    	if (list.isEmpty()) {
-    		resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No timeseries found matching the specified parameters");
-    		return null;
-    	}
-    	return list.get(0);
-    }
-    
-    private List<ReadOnlyTimeSeries> getMultipleTimeseries(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
+    private Map<ReadOnlyTimeSeries, String> getMultipleTimeseries(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
     	final String providerId = req.getParameter(Parameters.PARAM_PROVIDER);
     	if (providerId == null) {
     		resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Provider id missing");
@@ -274,51 +238,48 @@ public class TimeseriesServlet extends HttpServlet {
     // TODO support multipart?
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        /*
-
     	resp.setCharacterEncoding("UTF-8");
-    	final String databasePath = req.getParameter(Parameters.PARAM_DB);
-    	if (databasePath == null || databasePath.trim().isEmpty()) {
-    		resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Database id missing");
-    		return;
-    	}
     	final String target = req.getParameter(Parameters.PARAM_TARGET);
     	if (target == null || target.trim().isEmpty()) {
     		resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Target missing");
     		return;
     	}
-    	final String id = req.getParameter(Parameters.PARAM_ID);
     	final FendodbSerializationFormat format = getFormat(req, false);
-    	try (final CloseableDataRecorder recorder = factory.getExistingInstance(Paths.get(databasePath))) {
-    		if (recorder == null) {
-	    		resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Database not found: " + databasePath);
-	    		return;
-    		}
-    		if (recorder.getConfiguration().isReadOnlyMode()) {
-    			resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Database opened in read-only mode: " + databasePath);
-	    		return;
-    		}
-    		final FendoTimeSeries timeSeries = recorder.getRecordedDataStorage(id);
-    		if (timeSeries == null) {
-        		resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Time series " + id + " not found");
-        		return;
-        	}
-    		switch (target.trim().toLowerCase()) {
-    		case Parameters.TARGET_VALUE:
-    			// {"value":12.3,"time":34}
-    			// <entry><value>32.3</value><time>34</time></entry>
-    			Deserialization.deserializeValue(req.getReader(), timeSeries, format, clock, resp);
-    			break;
-    		case Parameters.TARGET_VALUES:
-    			Deserialization.deserializeValues(req.getReader(), timeSeries, format, resp);
-    			break;
-            default:
-            	resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown target " + target);
-            	return;
-    		}
+    	final String providerId = req.getParameter(Parameters.PARAM_PROVIDER);
+    	final ComponentServiceObjects<DataProvider<?>> service = dataProviders.get(providerId);
+    	if (service == null) {
+    		resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Data provider " + providerId + " not found");
+    		return;
+		}
+    	final Map.Entry<ReadOnlyTimeSeries,String> entry;
+    	final DataProvider<?> provider = service.getService();
+    	try {
+	    	entry = extractSingleTimeseries(req, resp, provider);
+    	} finally {
+    		service.ungetService(provider);
     	}
-     */
-
+    	if (entry == null) {
+    		resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Time series not found");
+    		return;
+		}
+    	final ReadOnlyTimeSeries timeSeries = entry.getKey();
+    	if (!(timeSeries instanceof TimeSeries) && !(timeSeries instanceof RecordedDataStorage)) {
+    		resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Cannot write to time series " + timeSeries + ": read only");
+    		return;
+    	}
+		switch (target.trim().toLowerCase()) {
+		case Parameters.TARGET_VALUE:
+			// {"value":12.3,"time":34}
+			// <entry><value>32.3</value><time>34</time></entry>
+			Deserialization.deserializeValue(req.getReader(), timeSeries, format, clock, resp);
+			break;
+		case Parameters.TARGET_VALUES:
+			Deserialization.deserializeValues(req.getReader(), timeSeries, format, resp);
+			break;
+        default:
+        	resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown target " + target);
+        	return;
+		}
     }
 
      @Override
@@ -578,9 +539,10 @@ public class TimeseriesServlet extends HttpServlet {
             case Parameters.TARGET_NEXT: // fallthrough
             case Parameters.TARGET_PREVIOUS:
             	final boolean nextOrPrevious = target.equals("nextvalue");
-            	final ReadOnlyTimeSeries ts = extractSingleTimeseries(req, resp, provider);
-            	if (ts == null)
+            	final Map.Entry<ReadOnlyTimeSeries, String> entry = extractSingleTimeseries(req, resp, provider);
+            	if (entry == null)
             		return;
+            	final ReadOnlyTimeSeries ts = entry.getKey();
             	final String timestamp = req.getParameter(Parameters.PARAM_TIMESTAMP);
             	if (timestamp == null) {
             		resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Timestamp missing");
@@ -596,14 +558,14 @@ public class TimeseriesServlet extends HttpServlet {
             	resp.getWriter().write(result);
             	break;
             case Parameters.TARGET_SIZE:
-            	final String idb = req.getParameter(Parameters.PARAM_ID);
-            	final ReadOnlyTimeSeries tsb = extractSingleTimeseries(req, resp, provider);
-            	if (tsb == null)
+            	final Map.Entry<ReadOnlyTimeSeries, String> entry2 = extractSingleTimeseries(req, resp, provider);
+            	if (entry2 == null)
             		return;
+            	final ReadOnlyTimeSeries tsb = entry2.getKey();
             	final long start = Utils.parseTimeString(req.getParameter(Parameters.PARAM_START), Long.MIN_VALUE);
                 final long end = Utils.parseTimeString(req.getParameter(Parameters.PARAM_END), Long.MAX_VALUE);
                 final int size = tsb.size(start, end);
-                printSize(resp.getWriter(), idb, lineBreak, indentation, size, format);
+                printSize(resp.getWriter(), entry2.getValue(), lineBreak, indentation, size, format);
                 break;
             case Parameters.TARGET_FIND:
             case Parameters.TARGET_STATISTICS:
@@ -636,16 +598,17 @@ public class TimeseriesServlet extends HttpServlet {
     		final DataProvider<?> provider, final FendodbSerializationFormat format) throws IOException {
     	switch (target) {
     	case Parameters.TARGET_FIND:
-    		final List<String> timeSeriesIds = extractTimeSeriesIds(req, resp, provider);
+    		final Collection<String> timeSeriesIds = extractTimeSeries(req, resp, provider).values();
     		serializeStrings(resp, format, timeSeriesIds, "timeSeries");
     		return;
     	case Parameters.TARGET_STATISTICS:
     		final String[] providers0 = req.getParameterValues(Parameters.PARAM_PROVIDERS);
     		if (providers0 == null || providers0.length == 0) {
-    			serializeStrings(resp, format, extractTimeSeriesIds(req, resp, provider), "timeSeries");
+    			serializeStrings(resp, format, extractTimeSeries(req, resp, provider).values(), "timeSeries");
     			return;
     		}
-       		final List<ReadOnlyTimeSeries> matches = extractTimeSeries(req, resp, provider);
+       		final List<ReadOnlyTimeSeries> matches = extractTimeSeries(req, resp, provider).keySet().stream()
+       				.collect(Collectors.toList());
     		final List<String> providerIds = Arrays.asList(providers0);
     		final Long start = Utils.parseTimeString(req.getParameter(Parameters.PARAM_START), null);
     		final Long end = Utils.parseTimeString(req.getParameter(Parameters.PARAM_END), null);
@@ -715,14 +678,14 @@ public class TimeseriesServlet extends HttpServlet {
 //        	outputTimeseriesIds(req, resp, provider, format);
 //        	return;
 //        }
-        final List<ReadOnlyTimeSeries> list = extractTimeSeries(req, resp, provider);
+        final Map<ReadOnlyTimeSeries,String> list = extractTimeSeries(req, resp, provider);
         if (list == null)
         	return;
         if (list.isEmpty()) {
         	resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Timeseries not found");
         	return;
         }
-        final ReadOnlyTimeSeries ts = list.get(0);
+        final ReadOnlyTimeSeries ts = list.keySet().iterator().next();
     	final long start = Utils.parseTimeString(req.getParameter(Parameters.PARAM_START), Long.MIN_VALUE);
         final long end = Utils.parseTimeString(req.getParameter(Parameters.PARAM_END), Long.MAX_VALUE);
         final String samplingIntervalStr = req.getParameter(Parameters.PARAM_INTERVAL);
@@ -771,7 +734,7 @@ public class TimeseriesServlet extends HttpServlet {
 
     private static void outputTimeseriesIds(final HttpServletRequest req, final HttpServletResponse resp, DataProvider<?> provider,
     		final FendodbSerializationFormat format) throws IOException {
-    	serializeStrings(resp, format,extractTimeSeriesIds(req, resp, provider), "timeSeries");
+    	serializeStrings(resp, format,extractTimeSeries(req, resp, provider).values(), "timeSeries");
     }
 
     private static void serializeStrings(final HttpServletResponse resp, final FendodbSerializationFormat format,
@@ -851,16 +814,25 @@ public class TimeseriesServlet extends HttpServlet {
         		writer.write('<');
         		writer.write(entryTag);
         		writer.write('>');
-        		writer.write(id);
+	        		writer.write('<');
+	        		writer.write("id");
+	        		writer.write('>');
+        				writer.write(id);
+    				writer.write('<');
+	        		writer.write('/');
+	        		writer.write("id");
+	        		writer.write('>');
+	        		writer.write('<');
+	        		writer.write("value");
+	        		writer.write('>');
+	        			writer.write(value.toString());
+	        		writer.write('<');
+	        		writer.write('/');
+	        		writer.write("value");
+	        		writer.write('>');
         		writer.write('<');
         		writer.write('/');
         		writer.write(entryTag);
-        		writer.write('>');
-        		writer.write('<');
-        		writer.write("value");
-        		writer.write('>');
-        		writer.write(value.toString());
-        		writer.write('/');
         		writer.write('>');
         		writer.write('\n');
         		break;
@@ -874,10 +846,11 @@ public class TimeseriesServlet extends HttpServlet {
         		writer.write(id);
         		writer.write('\"');
         		writer.write(':');
-        		if (!(value instanceof Number))
+        		final boolean isNumber = value instanceof Number; 
+        		if (!isNumber)
         				writer.write('\"');
-        		writer.write(value.toString());
-        		if (!(value instanceof Number))
+        		writer.write((isNumber && Double.isNaN(((Number) value).doubleValue())) ? "null" : value.toString());
+        		if (!isNumber)
     				writer.write('\"');
         		break;
         	default:

@@ -27,8 +27,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.ogema.core.channelmanager.measurements.FloatValue;
 import org.ogema.core.channelmanager.measurements.Quality;
 import org.ogema.core.channelmanager.measurements.SampledValue;
+import org.ogema.core.timeseries.ReadOnlyTimeSeries;
+import org.ogema.core.timeseries.TimeSeries;
 import org.ogema.recordeddata.DataRecorderException;
-import org.smartrplace.logging.fendodb.FendoTimeSeries;
+import org.ogema.recordeddata.RecordedDataStorage;
 
 class CsvDeserializer extends Deserializer {
 	
@@ -37,7 +39,7 @@ class CsvDeserializer extends Deserializer {
 	private final SampledValue[] buffer = new SampledValue[BUFFER_SIZE];
 	private int nextBufferIdx = 0;
 
-	CsvDeserializer(Reader reader, FendoTimeSeries timeSeries, HttpServletResponse resp) {
+	CsvDeserializer(Reader reader, ReadOnlyTimeSeries timeSeries, HttpServletResponse resp) {
 		super(reader, timeSeries, resp);
 		this.reader = new BufferedReader(reader);
 		
@@ -87,7 +89,10 @@ class CsvDeserializer extends Deserializer {
 		List<SampledValue> list = Arrays.asList(buffer);
 		if (lastEntry != BUFFER_SIZE)
 			list = list.subList(0, lastEntry);
-		timeSeries.insertValues(list);
+		if (timeSeries instanceof RecordedDataStorage) 
+			((RecordedDataStorage) timeSeries).insertValues(list);
+		else if (timeSeries instanceof TimeSeries)
+			((TimeSeries) timeSeries).addValues(list);
 	}
 	
 	private static SampledValue deserializeLine(final String line) {

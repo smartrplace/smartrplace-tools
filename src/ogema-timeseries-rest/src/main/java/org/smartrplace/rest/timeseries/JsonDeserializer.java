@@ -25,11 +25,11 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 
 import org.ogema.core.channelmanager.measurements.SampledValue;
-import org.smartrplace.logging.fendodb.FendoTimeSeries;
+import org.ogema.core.timeseries.ReadOnlyTimeSeries;
 
 class JsonDeserializer extends Deserializer {
 	
-	JsonDeserializer(Reader reader,FendoTimeSeries timeSeries, HttpServletResponse resp) {
+	JsonDeserializer(Reader reader, ReadOnlyTimeSeries timeSeries, HttpServletResponse resp) {
 		super(reader, timeSeries, resp);
 	}
 

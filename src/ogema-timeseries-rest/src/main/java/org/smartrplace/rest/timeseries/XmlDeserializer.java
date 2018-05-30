@@ -24,7 +24,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import org.ogema.core.channelmanager.measurements.SampledValue;
-import org.smartrplace.logging.fendodb.FendoTimeSeries;
+import org.ogema.core.timeseries.ReadOnlyTimeSeries;
 
 class XmlDeserializer extends Deserializer {
 	
@@ -33,7 +33,7 @@ class XmlDeserializer extends Deserializer {
 	private final Map<String,String> map = new HashMap<>(8); // buffer for json entries
 
 	
-	XmlDeserializer(Reader reader, FendoTimeSeries timeSeries, HttpServletResponse resp) {
+	XmlDeserializer(Reader reader, ReadOnlyTimeSeries timeSeries, HttpServletResponse resp) {
 		super(reader, timeSeries, resp);
 	}
 
