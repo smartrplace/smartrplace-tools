@@ -4,7 +4,8 @@
 ## Overview
 This repository contains tools for [OGEMA](http://www.ogema.org). Content:
 
-* schedule-management: a GUI for managing time series (create, copy, import/export data, plot) from various sources (schedules [OGEMA time series resources], log data, CSV files, etc.).
+- schedule-management: a GUI for managing time series (create, copy, import/export data, plot) from various sources (schedules [OGEMA time series resources], log data, CSV files, etc.).
+- ogema-timeseries-rest: a generic REST interface for accessing time series data in OGEMA. See the [Wiki page](https://github.com/smartrplace/smartrplace-tools/wiki/OGEMA-Timeseries-REST).
 
 It requires Java 8 or higher.   
 
