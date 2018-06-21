@@ -85,7 +85,6 @@ class DataSourceWidget extends PageSnippet {
 				}
 				
 			};
-			sourceTypeDropdown.setTemplate((DisplayTemplate) DataGenerator.TEMPLATE);
 		}
 		this.sourceTypeDropdown = sourceTypeDropdown;
 		
@@ -206,8 +205,6 @@ class DataSourceWidget extends PageSnippet {
 			return terminalOpt.getElement(items.get(0));
 		} else
 			return null;
-		 
-		
 	}
 	
 	

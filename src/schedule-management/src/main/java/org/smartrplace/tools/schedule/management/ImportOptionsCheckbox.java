@@ -35,12 +35,14 @@ class ImportOptionsCheckbox extends Checkbox {
 	private static final String REPLACE_EXISTING = "Replace existing values in time range";
 	private static final String MOVE_START_HERE = "Move time series start to now";
 	private static final String MOVE_END_HERE = "Move time series end to now";
+	private static final String MOVE_START_TO_0 = "Move time series start to 0";
 	
 	static {
 		importOptions = new LinkedHashMap<>();
 		importOptions.put(REPLACE_EXISTING, false);
 		importOptions.put(MOVE_START_HERE, false);
 		importOptions.put(MOVE_END_HERE, false);
+		importOptions.put(MOVE_START_TO_0, false);
 	}
 
 	ImportOptionsCheckbox(WidgetPage<?> page, String id) {
@@ -74,6 +76,10 @@ class ImportOptionsCheckbox extends Checkbox {
 		return getCheckboxList(req).get(MOVE_END_HERE);
 	}
 
+	boolean moveStartTo0(OgemaHttpRequest req) {
+		return getCheckboxList(req).get(MOVE_START_TO_0);
+	}
+	
 	private static class ImportOptionsCheckboxData extends CheckboxData {
 
 		ImportOptionsCheckboxData(ImportOptionsCheckbox checkbox) {
@@ -85,6 +91,7 @@ class ImportOptionsCheckbox extends Checkbox {
 		public JSONObject onPOST(String data, OgemaHttpRequest req) {
 			final boolean wasStartMover = checkboxList.get(MOVE_START_HERE);
 			final boolean wasEndMover = checkboxList.get(MOVE_END_HERE);
+			final boolean wasStart0 = checkboxList.get(MOVE_START_TO_0);
 	        JSONObject request = new JSONObject(data);
 	        data = request.getString("data");
 	        try {
@@ -101,12 +108,15 @@ class ImportOptionsCheckbox extends Checkbox {
 	        }
 			final boolean isStartMover = checkboxList.get(MOVE_START_HERE);
 			final boolean isEndMover = checkboxList.get(MOVE_END_HERE);
-	        if (isStartMover && isEndMover) { // must not both be active at the same time
-	        	boolean fixed = wasStartMover || wasEndMover;
+			final boolean isStart0Mover = checkboxList.get(MOVE_START_TO_0);
+	        if (isStartMover && isEndMover || isStartMover && isStart0Mover || isStart0Mover && isEndMover) { // must not both be active at the same time
+	        	boolean fixed = wasStartMover || wasEndMover || wasStart0;
 	        	if (wasStartMover || !fixed) 
 	        		checkboxList.put(MOVE_START_HERE, false);
 	        	if (wasEndMover || !fixed) 
 	        		checkboxList.put(MOVE_END_HERE, false);
+	        	if (wasStart0 || !fixed)
+	        		checkboxList.put(MOVE_START_TO_0, false);
 	        }
 	        return request;
 		}

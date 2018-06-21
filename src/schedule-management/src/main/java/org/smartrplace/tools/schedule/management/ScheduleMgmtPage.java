@@ -93,7 +93,6 @@ import de.iwes.widgets.html.form.textfield.ValueInputField;
 import de.iwes.widgets.html.plot.api.PlotType;
 import de.iwes.widgets.html.popup.Popup;
 import de.iwes.widgets.html.schedulemanipulator.ScheduleManipulator;
-import de.iwes.widgets.html.selectiontree.SelectionTree;
 import de.iwes.widgets.latch.LatchWidget;
 import de.iwes.widgets.latch.LatchWidgetData;
 import de.iwes.widgets.resource.timeseries.OnlineTimeSeries;
@@ -554,7 +553,6 @@ class ScheduleMgmtPage {
 				update(generators, req);
 			}
 		};  
-		importSelector.setTemplate((DisplayTemplate) DataGenerator.TEMPLATE);
 		this.openFileImportButton = new Button(page, "openFileImportButton") {
 			
 			private static final long serialVersionUID = 1L;
@@ -648,8 +646,9 @@ class ScheduleMgmtPage {
 				final boolean replace = loadScheduleReplaceCheckbox.doReplaceExisting(req);
 				final boolean startMover = loadScheduleReplaceCheckbox.moveStartHere(req);
 				final boolean endMover = loadScheduleReplaceCheckbox.moveEndHere(req);
+				final boolean start0Mover = loadScheduleReplaceCheckbox.moveStartTo0(req);
 				final int repeat = loadScheduleRepeatTimes.getNumericalValue(req);
-				final List<SampledValue> values = Utils.getValues(rots, am.getFrameworkTime(), startMover, endMover, repeat);
+				final List<SampledValue> values = Utils.getValues(rots, am.getFrameworkTime(), startMover, endMover, start0Mover, repeat);
 				if (replace) {
 					if (rots.getNextValue(Long.MIN_VALUE) != null) { // not empty 
 						long min = rots.getNextValue(Long.MIN_VALUE).getTimestamp();
@@ -794,10 +793,11 @@ class ScheduleMgmtPage {
 				final boolean replace =  fileImportReplaceCheckbox.doReplaceExisting(req);
 				final boolean startMover =  fileImportReplaceCheckbox.moveStartHere(req);
 				final boolean endMover = fileImportReplaceCheckbox.moveEndHere(req);
+				final boolean start0Mover = fileImportReplaceCheckbox.moveStartTo0(req);
 				final int repeat = fileImportRepeatTimes.getNumericalValue(req);
 //				boolean replace = fileImportReplaceCheckbox.getCheckboxList(req).values().iterator().next();
 				registerListener(listener, new FileImportContext(fgen, (TimeSeries) rots, replace, option, 
-						startMover, endMover, am.getFrameworkTime(), repeat), req);
+						startMover, endMover, start0Mover, am.getFrameworkTime(), repeat), req);
 				fileImportWaiter.reset(1, req);
 			}
 			
@@ -1429,11 +1429,12 @@ class ScheduleMgmtPage {
 		private final boolean replaceValues;
 		private final boolean moveStart;
 		private final boolean moveEnd;
+		private final boolean moveStart0;
 		private final long now;
 		private final int repeat;
 		
 		public FileImportContext(FileBasedDataGenerator generator, TimeSeries timeSeries, boolean replaceValues, String option, 
-				boolean moveStart, boolean moveEnd, long now, int repeat) {
+				boolean moveStart, boolean moveEnd, boolean moveStart0, long now, int repeat) {
 			Objects.requireNonNull(generator);
 			Objects.requireNonNull(timeSeries);
 			this.generator = generator;
@@ -1442,6 +1443,7 @@ class ScheduleMgmtPage {
 			this.option = (option != null ? option.trim() : option);
 			this.moveEnd = moveEnd;
 			this.moveStart = moveStart;
+			this.moveStart0 = moveStart0;
 			this.now = now;
 			this.repeat = repeat;
 		}
@@ -1498,8 +1500,8 @@ class ScheduleMgmtPage {
 		public void fileUploaded(FileItem fileItem, FileImportContext context, OgemaHttpRequest req) {
 			try {
 				List<SampledValue> values = context.generator.parseFile(fileItem, Float.class, context.option);
-				if (context.moveStart || context.moveEnd || context.repeat != 1)
-					values = Utils.getValues(values, context.now, context.moveStart, context.moveEnd, context.repeat);
+				if (context.moveStart || context.moveEnd || context.moveStart0 || context.repeat != 1)
+					values = Utils.getValues(values, context.now, context.moveStart, context.moveEnd, context.moveStart0, context.repeat);
 				if (context.replaceValues) {
 					if (!values.isEmpty())
 						context.timeSeries.replaceValues(values.get(0).getTimestamp(), values.get(values.size()-1).getTimestamp(), values);

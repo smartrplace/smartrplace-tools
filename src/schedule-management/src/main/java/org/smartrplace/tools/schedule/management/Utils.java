@@ -35,16 +35,20 @@ class Utils {
 		return true;
 	}
 	
-	static List<SampledValue> getValues(final ReadOnlyTimeSeries timeSeries, final long now, final boolean moveStartHere, final boolean moveEndHere, int repeat) {
-		if ((!moveStartHere && !moveEndHere && repeat == 1) || timeSeries.isEmpty())
+	static List<SampledValue> getValues(final ReadOnlyTimeSeries timeSeries, final long now, 
+				final boolean moveStartHere, final boolean moveEndHere, final boolean moveStart0, int repeat) {
+		if ((!moveStartHere && !moveEndHere && !moveStart0 && repeat == 1) || timeSeries.isEmpty())
 			return timeSeries.getValues(Long.MIN_VALUE);
 		long offset;
 		if (moveStartHere) {
 			final SampledValue start = timeSeries.getNextValue(Long.MIN_VALUE);
 			offset = (start != null ? now - start.getTimestamp() : 0);
-		} else {
+		} else if (moveEndHere) {
 			final SampledValue end = timeSeries.getPreviousValue(Long.MAX_VALUE);
 			offset = (end != null ? now - end.getTimestamp() : 0);
+		} else { // moveStart0
+			final SampledValue start = timeSeries.getNextValue(Long.MIN_VALUE);
+			offset = start != null ? -start.getTimestamp() : 0;
 		}
 		final List<SampledValue> values = new ArrayList<>();
 		for (int i=0;i<repeat;i++) {
@@ -59,8 +63,9 @@ class Utils {
 		return values;
 	}
 	
-	static List<SampledValue> getValues(final List<SampledValue> timeSeries, final long now, final boolean moveStartHere, final boolean moveEndHere, int repeat) {
-		if ((!moveStartHere && !moveEndHere && repeat == 1) || timeSeries.isEmpty())
+	static List<SampledValue> getValues(final List<SampledValue> timeSeries, final long now, 
+			final boolean moveStartHere, final boolean moveEndHere, final boolean moveStart0, int repeat) {
+		if ((!moveStartHere && !moveEndHere && !moveStart0 && repeat == 1) || timeSeries.isEmpty())
 			return timeSeries;
 		long offset;
 		final int sign;
@@ -68,10 +73,14 @@ class Utils {
 			final SampledValue start = timeSeries.get(0);
 			offset = now - start.getTimestamp();
 			sign = 1;
-		} else {
+		} else if (moveEndHere) {
 			final SampledValue end = timeSeries.get(timeSeries.size()-1);
 			offset = now - end.getTimestamp();
 			sign = -1;
+		} else { // moveStart0
+			final SampledValue start = timeSeries.get(0);
+			offset = -start.getTimestamp();
+			sign = 1;
 		}
 		final List<SampledValue> values = new ArrayList<>();
 	    final SampledValue first = timeSeries.get(0);
