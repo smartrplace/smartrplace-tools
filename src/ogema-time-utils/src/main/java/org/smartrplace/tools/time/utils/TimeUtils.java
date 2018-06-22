@@ -132,6 +132,65 @@ public class TimeUtils {
 		return previousOrNextAlignedIntervalStart(base, factor, unit, timeZone, false);
 	}
 	
+	/**
+	 * Add the specified amount of time to an instant, using the system default time zone, if required.
+	 * @param base
+	 * @param factor
+	 * @param unit
+	 * @return
+	 */
+	public static Instant add(final Instant base, final long factor, final TemporalUnit unit) {
+		return add(base, factor, unit, null);
+	}
+
+	/**
+	 * Add the specified amount of time to an instant.
+	 * @param base
+	 * @param factor
+	 * @param unit
+	 * @param timeZone
+	 * @return
+	 */
+	public static Instant add(final Instant base, final long factor, final TemporalUnit unit, ZoneId timeZone) {
+		if (!unit.isDateBased())
+			return base.plus(factor, unit);
+		if (timeZone == null)
+			timeZone = ZoneId.systemDefault();
+		return ZonedDateTime.ofInstant(base, timeZone)
+			.plus(factor, unit)
+			.toInstant();
+	}
+	
+	/**
+ 	 * Subtract the specified amount of time from an instant, using the system default time zone, if required.
+	 * @param base
+	 * @param factor
+	 * @param unit
+	 * @return
+	 */
+	public static Instant subtract(final Instant base, final long factor, final TemporalUnit unit) {
+		return subtract(base, factor, unit, null);
+	}
+	
+	/**
+	 * Subtract the specified amount of time from an instant.
+	 * @param base
+	 * @param factor
+	 * @param unit
+	 * @param timeZone
+	 * @return
+	 */
+	public static Instant subtract(final Instant base, final long factor, final TemporalUnit unit, ZoneId timeZone) {
+		if (!unit.isDateBased())
+			return base.minus(factor, unit);
+		if (timeZone == null)
+			timeZone = ZoneId.systemDefault();
+		return ZonedDateTime.ofInstant(base, timeZone)
+			.minus(factor, unit)
+			.toInstant();
+	}
+	
+	
 	private static Instant previousOrNextAlignedIntervalStart(final Instant base, final long factor, final TemporalUnit unit, 
 			ZoneId timeZone, final boolean previousOrNext) {
 		Objects.requireNonNull(base);
