@@ -24,11 +24,20 @@ import org.ogema.core.application.TimerListener;
  *   <li>on the third day of each month, irrespectively of the number of days per month.
  * </ul>
  * Furthermore, the timer ensures that no offset aggregates over time due to the execution time of the timer listeners.
+ * To final the appropriate start time for an aligned interval, use 
+ * {@link TimeUtils#getNextAlignedIntervalStart(Instant, long, java.time.temporal.TemporalUnit, ZoneId)}
+ * and related methods in {@link TimeUtils}.
+ * 
  * <br>
+ * 
  * Create an instance using the {@link #builder(ApplicationManager, TemporalAmount)} method. For instance:
  * <code>
- *    PeriodTimerSimple.builder(appMan, Period.ofDays(1)).build();
+ *    Instant start = TimeUtils.getNextAlignedIntervalStart(Instant.ofEpochMilli(System.currentTimeMillis()), 15, ChronoUnit.MINUTES);
+ *    Timer timer = PeriodTimerSimple.builder(appMan, Duration.ofMinutes(15))
+			.setStartTime(start)
+			.build();
  * </code>
+ * will execute every 15 minutes at the full hour, 15 past, 30 past and 45.
  * 
  * @author cnoelle
  */

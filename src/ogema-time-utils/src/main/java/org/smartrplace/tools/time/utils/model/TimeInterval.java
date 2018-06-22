@@ -12,11 +12,15 @@ import org.ogema.core.model.simple.IntegerResource;
 import org.ogema.core.model.simple.StringResource;
 
 /**
- * A persistent {@link TemporalAmount}. Only supports {@link TemporalUnit} of type
- * {@link ChronoUnit}.
+ * A persistent time interval, based on a {@link TemporalUnit} (of type {@link ChronoUnit})
+ * and a factor.
  */
-public interface TemporalAmountResource extends Resource { 
+public interface TimeInterval extends Resource { 
 
+	/**
+	 * Must correspond to an enum of {@link ChronoUnit}.
+	 * @return
+	 */
 	StringResource chronoUnit();
 	IntegerResource factor();
 	
@@ -47,7 +51,7 @@ public interface TemporalAmountResource extends Resource {
 	 * @throws IllegalArgumentException if the value of the {@link #chronoUnit()} subresource does not
 	 * 		correspond to one of the {@link ChronoUnit} enums. 
 	 */
-	default TemporalAmount getValue() {
+	default TemporalAmount getTemporalAmount() {
 		if (!chronoUnit().isActive() || !factor().isActive())
 			return null;
 		final ChronoUnit unit = ChronoUnit.valueOf(chronoUnit().getValue());

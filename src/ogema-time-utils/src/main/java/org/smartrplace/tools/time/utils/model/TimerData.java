@@ -9,10 +9,14 @@ import org.ogema.core.model.simple.TimeResource;
  */
 public interface TimerData extends Resource {
 
-	TemporalAmountResource period();
+	TimeInterval period();
 	TimeResource startTime();
 	TimeResource endTime();
 	StringResource timeZone();
+	/**
+	 * internal state variable, do not write
+	 * @return
+	 */
 	TimeResource nextExecutionTime();
 	
 }

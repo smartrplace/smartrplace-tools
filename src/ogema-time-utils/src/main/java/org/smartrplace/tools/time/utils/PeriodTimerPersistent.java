@@ -20,6 +20,8 @@ import org.ogema.core.model.simple.IntegerResource;
 import org.ogema.core.model.simple.SingleValueResource;
 import org.ogema.core.model.simple.StringResource;
 import org.ogema.core.model.simple.TimeResource;
+import org.ogema.core.resourcemanager.AccessMode;
+import org.ogema.core.resourcemanager.AccessPriority;
 import org.ogema.core.resourcemanager.ResourceOperationException;
 import org.ogema.core.resourcemanager.ResourceStructureEvent;
 import org.ogema.core.resourcemanager.ResourceStructureListener;
@@ -28,7 +30,7 @@ import org.ogema.core.resourcemanager.transaction.ReadConfiguration;
 import org.ogema.core.resourcemanager.transaction.ResourceTransaction;
 import org.ogema.core.resourcemanager.transaction.TransactionFuture;
 import org.slf4j.Logger;
-import org.smartrplace.tools.time.utils.model.TemporalAmountResource;
+import org.smartrplace.tools.time.utils.model.TimeInterval;
 import org.smartrplace.tools.time.utils.model.TimerData;
 
 /**
@@ -40,10 +42,11 @@ import org.smartrplace.tools.time.utils.model.TimerData;
 public class PeriodTimerPersistent extends DelegatingTimer implements PeriodTimer {
 
 	final ApplicationManager appMan;
-	private final Callable<Void> resumeTask;
+	final Callable<Void> resumeTask;
 	private final ChangeListener changeListener;
 	final TimerData config;
 	final Logger logger;
+	volatile boolean active = false;
 	
 	/**
 	 * Create a persistent timer. This constructor should be used with ready configured resources,
@@ -104,6 +107,7 @@ public class PeriodTimerPersistent extends DelegatingTimer implements PeriodTime
 		super(Objects.requireNonNull(appMan).createTimer(Long.MAX_VALUE));
 		this.appMan = appMan;
 		this.config = Objects.requireNonNull(config);
+		config.nextExecutionTime().requestAccessMode(AccessMode.EXCLUSIVE, AccessPriority.PRIO_HIGHEST);
 		this.logger = appMan.getLogger();
 		if (timeUnit != null && timeFactor <= 0) {
 			baseTimer.destroy();
@@ -126,15 +130,16 @@ public class PeriodTimerPersistent extends DelegatingTimer implements PeriodTime
 			ownListener.timerElapsed(baseTimer);
 			return (Void) null;
 		};
-		this.changeListener = new ChangeListener(appMan, resumeTask);
-		resume();
+		this.changeListener = new ChangeListener(this);
+		config.addStructureListener(changeListener);
+		if (config.isActive())
+			resume();
 	}
 	
 	
 	
 	private final void addChangeListener() {
-		config.addStructureListener(changeListener);
-		final TemporalAmountResource period =config.period();
+		final TimeInterval period =config.period();
 		period.chronoUnit().addStructureListener(changeListener);
 		period.chronoUnit().addValueListener(changeListener);
 		period.factor().addStructureListener(changeListener);
@@ -144,8 +149,7 @@ public class PeriodTimerPersistent extends DelegatingTimer implements PeriodTime
 	}
 	
 	private final void removeChangeListener() {
-		config.removeStructureListener(changeListener);
-		final TemporalAmountResource period =config.period();
+		final TimeInterval period =config.period();
 		period.chronoUnit().removeStructureListener(changeListener);
 		period.chronoUnit().removeValueListener(changeListener);
 		period.factor().removeStructureListener(changeListener);
@@ -157,7 +161,7 @@ public class PeriodTimerPersistent extends DelegatingTimer implements PeriodTime
 	@Override
 	public TemporalAmount getPeriod() {
 		final ResourceTransaction trans = appMan.getResourceAccess().createResourceTransaction();
-		final TemporalAmountResource period = config.period();
+		final TimeInterval period = config.period();
 		final TransactionFuture<Boolean> active0 = trans.isActive(period);
 		final TransactionFuture<String> chrono = trans.getString(period.chronoUnit(), ReadConfiguration.FAIL);
 		final TransactionFuture<Integer> fact = trans.getInteger(period.factor(), ReadConfiguration.FAIL);
@@ -231,6 +235,7 @@ public class PeriodTimerPersistent extends DelegatingTimer implements PeriodTime
 	public void resume() {
 		if (!baseTimer.isRunning()) {
 			addChangeListener();
+			active = true;
 			appMan.submitEvent(resumeTask);
 		}
 	}
@@ -245,33 +250,61 @@ public class PeriodTimerPersistent extends DelegatingTimer implements PeriodTime
 	@Override
 	public void stop() {
 		removeChangeListener();
+		active = false;
 		super.stop();
 	}
 	
 	@Override
 	public void destroy() {
-		removeChangeListener();
+		try {
+			config.removeStructureListener(changeListener);
+			removeChangeListener();
+			config.nextExecutionTime().requestAccessMode(AccessMode.SHARED, AccessPriority.PRIO_LOWEST);
+		} catch (Exception e) {}
 		super.destroy();
 	}
 	
 	private static class ChangeListener implements ResourceValueListener<SingleValueResource>, ResourceStructureListener {
 		
-		private final ApplicationManager appMan;
-		private final Callable<Void> changeTask;
+		private final PeriodTimerPersistent master;
 		
-		ChangeListener(ApplicationManager appMan, Callable<Void> changeTask) {
-			this.appMan = appMan;
-			this.changeTask = changeTask;
+		ChangeListener(PeriodTimerPersistent master) {
+			this.master = master;
 		}
 
 		@Override
 		public void resourceStructureChanged(ResourceStructureEvent event) {
-			appMan.submitEvent(changeTask);
+			switch (event.getType()) {
+			case RESOURCE_DELETED:
+				boolean configExists = false;
+				try {
+					configExists = master.config.exists();
+				} catch (NullPointerException e) {}
+				if (!configExists)
+					master.destroy();
+				return;
+				 // TODO write a test for activation and deactivation of the config resource
+			case RESOURCE_ACTIVATED:
+				if (master.config.equals(event.getChangedResource())) {
+					master.resume();
+					return;
+				}
+				break;
+			case RESOURCE_DEACTIVATED:
+				if (master.config.equals(event.getChangedResource())) {
+					master.stop();
+					return;
+				}
+				break;
+			default:
+				break;
+			}
+			master.appMan.submitEvent(master.resumeTask);
 		}
 
 		@Override
 		public void resourceChanged(SingleValueResource resource) {
-			appMan.submitEvent(changeTask);
+			master.appMan.submitEvent(master.resumeTask);
 		}
 		
 	}
@@ -312,12 +345,16 @@ public class PeriodTimerPersistent extends DelegatingTimer implements PeriodTime
 		// calculate next execution time
 		@Override
 		public void timerElapsed(Timer timer) {
+			if (!master.active) {
+				timer.stop();
+				return;
+			}
 			timer.stop();
 			final Instant now = Instant.ofEpochMilli(timer.getExecutionTime());
 			final ResourceTransaction trans = master.appMan.getResourceAccess().createResourceTransaction();
 			
 			final TransactionFuture<Boolean> configActive = trans.isActive(config);
-			final TemporalAmountResource period = config.period();
+			final TimeInterval period = config.period();
 			final TransactionFuture<String> unit = trans.getString(period.chronoUnit(), ReadConfiguration.FAIL);
 			final TransactionFuture<Integer> fact = trans.getInteger(period.factor(), ReadConfiguration.FAIL);
 			final TransactionFuture<Long> start = trans.getTime(config.startTime(), ReadConfiguration.RETURN_NULL);

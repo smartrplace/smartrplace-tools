@@ -2,10 +2,11 @@ package org.smartrplace.tools.time.utils.test;
 
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.ogema.core.administration.FrameworkClock;
 import org.ogema.core.application.Timer;
@@ -119,38 +120,78 @@ public class PersistentTimerTest extends LatestVersionsTestBase {
 		}
 	}
 	
-	@Ignore // fails
 	@Test
-	public void stopResumeWorks() {
+	public void stopResumeWorks() throws InterruptedException, ExecutionException, TimeoutException {
 		final TimerData config = getApplicationManager().getResourceManagement().createResource(newResourceName(), TimerData.class);
-		// we do not activate the factor subresource
 		config.period().chronoUnit().<StringResource> create().setValue(ChronoUnit.SECONDS.name());
 		config.period().factor().<IntegerResource> create().setValue(1);
 		config.activate(true);
 		final PeriodTimerPersistent timer = new PeriodTimerPersistent(getApplicationManager(), config);
 		try {
-			timer.stop();
-			Thread.sleep(5000);
+			getApplicationManager().submitEvent(() -> {
+				timer.stop();
+				return (Void) null;
+			}).get(5, TimeUnit.SECONDS);
 			final TestListener listener = new TestListener(getApplicationManager().getFrameworkTime(), 1);
 			timer.addListener(listener);
 			Assert.assertFalse("Timer executed although it has been stopped", listener.await(2, TimeUnit.SECONDS));
 			timer.resume();
 			Assert.assertTrue("Timer listener not called", listener.await(3, TimeUnit.SECONDS));
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new AssertionError("Interrupted");
 		} finally {
 			timer.destroy();
 		}
 	}
 	
+	@Test
+	public void stopResumeWorksViaActivation() throws InterruptedException {
+		final TimerData config = getApplicationManager().getResourceManagement().createResource(newResourceName(), TimerData.class);
+		config.period().chronoUnit().<StringResource> create().setValue(ChronoUnit.SECONDS.name());
+		config.period().factor().<IntegerResource> create().setValue(1);
+//		config.activate(true); // we leave it deliberately inactive
+		final PeriodTimerPersistent timer = new PeriodTimerPersistent(getApplicationManager(), config);
+		try {
+			final TestListener listener = new TestListener(getApplicationManager().getFrameworkTime(), 1);
+			timer.addListener(listener);
+			Assert.assertFalse("Timer executed although its config resource is inactive", listener.await(2, TimeUnit.SECONDS));
+			config.activate(true);
+			Assert.assertTrue("Timer listener not called", listener.await(5, TimeUnit.SECONDS));
+		} finally {
+			timer.destroy();
+		}
+	}
+	
+	@Test
+	public void stopWorksViaDeactivation() throws InterruptedException {
+		final TimerData config = getApplicationManager().getResourceManagement().createResource(newResourceName(), TimerData.class);
+		config.period().chronoUnit().<StringResource> create().setValue(ChronoUnit.SECONDS.name());
+		config.period().factor().<IntegerResource> create().setValue(1);
+		config.activate(true);
+		final PeriodTimerPersistent timer = new PeriodTimerPersistent(getApplicationManager(), config);
+		try {
+			final TestListener listener = new TestListener(getApplicationManager().getFrameworkTime(), 1);
+			timer.addListener(listener);
+			Assert.assertTrue("Timer listener not called", listener.await(5, TimeUnit.SECONDS));
+			config.deactivate(false);
+			Thread.sleep(50); // there might be pending timer callbacks...
+			listener.reset(1);
+			Assert.assertFalse("Timer listener called although its config resource has been deactivated", listener.await(2, TimeUnit.SECONDS));
+		} finally {
+			timer.destroy();
+		}
+	}
+	
+	
 	private static class TestListener implements TimerListener {
 		
 		private final long startTime;
-		private final CountDownLatch latch;
+		private volatile CountDownLatch latch;
 		
 		TestListener(long start, int expectedCallbacks) {
 			this.startTime = start;
+			this.latch = new CountDownLatch(expectedCallbacks);
+		}
+		
+		public void reset(int expectedCallbacks) {
 			this.latch = new CountDownLatch(expectedCallbacks);
 		}
 		
