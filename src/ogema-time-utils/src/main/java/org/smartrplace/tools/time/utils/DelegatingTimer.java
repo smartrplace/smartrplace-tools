@@ -8,7 +8,7 @@ import org.ogema.core.application.TimerListener;
 
 public abstract class DelegatingTimer implements Timer {
 	
-	final Timer baseTimer;
+	protected final Timer baseTimer;
 
 	protected DelegatingTimer(Timer timer) {
 		this.baseTimer = Objects.requireNonNull(timer);
