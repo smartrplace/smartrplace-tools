@@ -20,6 +20,7 @@
 	</scm>
 	
 	<modules>
+		<module>ogema-timer-utils</module>
 		<module>ogema-timeseries-rest</module>
 		<module>schedule-management</module>
 	</modules>
