@@ -14,6 +14,11 @@
 	<name>Schedule management</name>
 	<packaging>bundle</packaging>
 	<version>1.0.2-SNAPSHOT</version>
+	
+	<properties>
+		<guava.version.max>26.0</guava.version.max>
+		<org.json.version.max>20180131</org.json.version.max>
+	</properties>
 
 	<repositories>
 		<repository>
