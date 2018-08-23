@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+   	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>org.smartrplace.tools</groupId>	
+    <artifactId>graaljs-osgi</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>Graal.js OSGi bundle</name>
+    <description>Makes Graal.js available as scripting engine in OSGi</description>
+    
+    <packaging>bundle</packaging>
+    
+    <!-- 
+    	Build instructions: 
+    	 - download the Graal.js community edition for Linux (irrespectively of your OS): https://github.com/oracle/graal/releases
+    	   and decompress it
+    	 - change the property value <graalvm.path> below to the absolute path of the graalvm base dir
+    	 - execute 'mvn clean install' in the base folder of this project
+    -->
+    <properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<graalvm.path>C:/Users/cnoelle/temp/graalvm-ce-1.0.0-rc5</graalvm.path>
+		<graalvm.version>1.0.0-rc5</graalvm.version>
+	</properties>
+	
+	<inceptionYear>2018</inceptionYear>
+	
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>manual</distribution>
+		</license>
+	</licenses>
+
+	<scm>
+		<connection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</connection>
+		<developerConnection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</developerConnection>
+		<url>https://github.com/smartrplace/smartrplace-tools</url>
+		<tag>HEAD</tag>
+	</scm>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                	<instructions>
+                		<Embed-Dependency>
+                			graaljs, truffle-api, graal-sdk, graaljs-scriptengine, tregex, icu4j
+                		</Embed-Dependency>
+                		<!-- service loader mechanism plus pure OSGi service... -->
+	               		<Include-Resource>
+                			{maven-resources}, 
+                			META-INF/services/javax.script.ScriptEngineFactory=services/javax.script.ScriptEngineFactory,
+                			OSGI-INF/com.oracle.truffle.js.scriptengine.GraalJSEngineFactory.xml=OSGI-INF/com.oracle.truffle.js.scriptengine.GraalJSEngineFactory.xml
+                		</Include-Resource>
+                		<Service-Component>OSGI-INF/com.oracle.truffle.js.scriptengine.GraalJSEngineFactory.xml</Service-Component>
+                	</instructions>
+                </configuration>
+            </plugin>
+            <plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+					<showDeprecation>true</showDeprecation>
+					<showWarnings>true</showWarnings>
+					<compilerArgs>
+						<arg>-Xlint</arg>
+					</compilerArgs>
+				</configuration>
+			</plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.core</artifactId>
+            <version>6.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.cmpn</artifactId>
+            <version>6.0.0</version>
+        </dependency>
+         <dependency>
+		    <groupId>com.ibm.icu</groupId>
+		    <artifactId>icu4j</artifactId>
+		    <version>62.1</version>
+		</dependency>
+		<dependency>
+            <groupId>graal</groupId>
+            <artifactId>graaljs</artifactId>
+            <version>${graalvm.version}</version>
+            <scope>system</scope>
+            <systemPath>${graalvm.path}/jre/languages/js/graaljs.jar</systemPath>
+        </dependency>
+         <dependency>
+            <groupId>graal</groupId>
+            <artifactId>truffle-api</artifactId>
+            <version>${graalvm.version}</version>
+            <scope>system</scope>
+            <systemPath>${graalvm.path}/jre/lib/truffle/truffle-api.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>graal</groupId>
+            <artifactId>graal-sdk</artifactId>
+            <version>${graalvm.version}</version>
+            <scope>system</scope>
+            <systemPath>${graalvm.path}/jre/lib/boot/graal-sdk.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>graal</groupId>
+            <artifactId>graaljs-scriptengine</artifactId>
+            <version>${graalvm.version}</version>
+            <scope>system</scope>
+            <systemPath>${graalvm.path}/jre/lib/boot/graaljs-scriptengine.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>graal</groupId>
+            <artifactId>tregex</artifactId>
+            <version>${graalvm.version}</version>
+            <scope>system</scope>
+            <systemPath>${graalvm.path}/jre/tools/regex/tregex.jar</systemPath>
+        </dependency>
+		
+        <!-- 
+	    <dependency>
+            <groupId>graal</groupId>
+            <artifactId>graaljs</artifactId>
+            <version>0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/graaljs.jar</systemPath>
+        </dependency>
+         <dependency>
+            <groupId>graal</groupId>
+            <artifactId>truffle-api</artifactId>
+            <version>0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/truffle-api.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>graal</groupId>
+            <artifactId>graal-sdk</artifactId>
+            <version>0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/graal-sdk.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>graal</groupId>
+            <artifactId>graaljs-scriptengine</artifactId>
+            <version>0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/graaljs-scriptengine.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>graal</groupId>
+            <artifactId>tregex</artifactId>
+            <version>0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/tregex.jar</systemPath>
+        </dependency>
+        -->
+        <!-- 
+        <dependency>
+            <groupId>graal</groupId>
+            <artifactId>icu4j</artifactId>
+            <version>0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/icu4j-62.1.jar</systemPath>
+        </dependency>
+        -->
+   </dependencies>
+</project>
