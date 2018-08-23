@@ -6,7 +6,7 @@ This repository contains tools for [OGEMA](http://www.ogema.org). Content:
 
 - **schedule-management**: a GUI for managing time series (create, copy, import/export data, plot) from various sources (schedules [OGEMA time series resources], log data, CSV files, etc.).
 - **ogema-timeseries-rest**: a generic REST interface for accessing time series data in OGEMA. See the [Wiki page](https://github.com/smartrplace/smartrplace-tools/wiki/OGEMA-Timeseries-REST).
-- **graal-osgi**: a wrapper to make [graal-js](https://github.com/graalvm/graaljs) available as Javascript script engine to OGEMA
+- **graal-osgi**: a wrapper to make [graal-js](https://github.com/graalvm/graaljs) available as Javascript script engine to OGEMA. See [README](https://github.com/smartrplace/smartrplace-tools/blob/master/src/graal-osgi/README.md). 
 
 Most of the tools require Java 8 or higher.   
 
