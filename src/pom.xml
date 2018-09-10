@@ -20,10 +20,14 @@
 	</scm>
 	
 	<modules>
+		<module>executor-service</module>
+		<module>file-upload</module>
 		<module>ogema-timer-utils</module>
 		<module>ogema-timeseries-rest</module>
-		<module>rest-api</module>
+		<module>sample-task</module>
 		<module>schedule-management</module>
+		<module>servlet-tools</module>
+		<module>ssl-service</module>
 	</modules>
 
 </project>
