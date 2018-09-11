@@ -55,13 +55,14 @@
 	</build>
 	
 	<modules>
-		<module>file-upload-utils</module>
+		<module>file-upload-autoupload</module>
 		<module>file-upload-client-api</module>
 		<module>file-upload-client-v2</module>
 		<module>file-upload-servlet-api</module>
 		<module>file-upload-servlet-v2</module>
 		<module>file-upload-tests</module>
 		<module>file-upload-tests-security</module>
+		<module>file-upload-utils</module>
 	</modules>
 
 	<dependencyManagement>

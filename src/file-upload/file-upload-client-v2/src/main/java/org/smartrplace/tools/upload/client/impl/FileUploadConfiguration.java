@@ -11,7 +11,9 @@ public @interface FileUploadConfiguration {
 	
 	String remotePw();
 	
-	boolean disableHostnameVerification() default false; 
+	boolean disableHostnameVerification() default false;
+	
+	boolean disableHostCertVerification() default false;
 	
 	int getRequestTimeoutSeconds() default 30;
 	

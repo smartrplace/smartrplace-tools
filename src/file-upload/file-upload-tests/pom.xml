@@ -107,6 +107,12 @@
 		</dependency>
 		<dependency>
 			<groupId>org.smartrplace.tools</groupId>
+			<artifactId>file-upload-autoupload</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.smartrplace.tools</groupId>
 			<artifactId>executor-service</artifactId>
 			<scope>test</scope>
 		</dependency>

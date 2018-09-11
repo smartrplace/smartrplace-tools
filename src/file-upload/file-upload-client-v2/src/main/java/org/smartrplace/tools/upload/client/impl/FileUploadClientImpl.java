@@ -73,13 +73,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 // TODO set character encodings and content types where necessary?
-// TODO make this a factory, to support multiple configurations
 @Component(
 		service=FileUploadClient.class,
 		configurationPid=FileUploadClient.CLIENT_PID,
-		configurationPolicy=ConfigurationPolicy.REQUIRE
+		configurationPolicy=ConfigurationPolicy.REQUIRE,
+		property= {
+				"service.factoryPid=" + FileUploadClient.CLIENT_PID
+		}
 )
-@Designate(ocd=FileUploadConfiguration.class)
+@Designate(factory=true, ocd=FileUploadConfiguration.class)
 public class FileUploadClientImpl implements FileUploadClient {
 
 	private HttpClientContext clientContext;
@@ -123,7 +125,7 @@ public class FileUploadClientImpl implements FileUploadClient {
 		if (isHttps) {
 			final SslService ssl = sslService.getService();
 			try {
-				builder.setSSLContext(ssl.getContext(false, true));
+				builder.setSSLContext(config.disableHostCertVerification() ? ssl.getUnsafeTrustAllContext(false) : ssl.getContext(false, true));
 			} finally {
 				sslService.ungetService(ssl);
 			}
@@ -132,6 +134,11 @@ public class FileUploadClientImpl implements FileUploadClient {
 			builder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
 		this.client = builder.build();
 		client.start();
+		if (config.disableHostCertVerification() || config.disableHostnameVerification()) {
+			LoggerFactory.getLogger(getClass()).error("!!!!!!!!!!!");
+			LoggerFactory.getLogger(getClass()).error("Running in debug mode; server SSL verification disabled in file upload client configuration.");
+			LoggerFactory.getLogger(getClass()).error("!!!!!!!!!!!");
+		}
 	}
 	
 	private final void clearTempFolder() {

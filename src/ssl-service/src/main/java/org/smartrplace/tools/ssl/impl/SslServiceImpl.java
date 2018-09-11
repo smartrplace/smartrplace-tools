@@ -10,12 +10,15 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -30,7 +33,10 @@ import org.smartrplace.tools.ssl.SslService;
 @Component(
 		service = SslService.class,
 		configurationPid=SslConstants.SSL_SERVICE_PID,
-		configurationPolicy=ConfigurationPolicy.OPTIONAL
+		configurationPolicy=ConfigurationPolicy.OPTIONAL,
+		property = {
+				"service.factoryPid=" + SslConstants.SSL_SERVICE_PID
+		}
 )
 @Designate(ocd=SslConfig.class)
 public class SslServiceImpl implements SslService {
@@ -53,9 +59,18 @@ public class SslServiceImpl implements SslService {
 			LoggerFactory.getLogger(SslService.class).error("Failed to load truststore at {}", config.truststorePath(), e);
 		}
 	}
-
+	
 	@Override
-	public SSLContext getContext(boolean initKeystore, boolean initTruststore) throws KeyStoreNotAvailableException  {
+	public SSLContext getUnsafeTrustAllContext(boolean initKeystore) throws KeyStoreNotAvailableException {
+		return getContext(initKeystore, false, true);
+	}
+	
+	@Override
+	public SSLContext getContext(boolean initKeystore, boolean initTruststore) throws KeyStoreNotAvailableException {
+		return getContext(initKeystore, initTruststore, false);
+	}
+
+	private SSLContext getContext(boolean initKeystore, boolean initTruststore, boolean trustAll) throws KeyStoreNotAvailableException  {
 		final SslConfig config = this.config;
 		try {
 			final SSLContext context;
@@ -77,6 +92,20 @@ public class SslServiceImpl implements SslService {
 					TrustManagerFactory.getInstance(algo, config.provider());
 				tmFactory.init(trustStore);
 				trustManagers = tmFactory.getTrustManagers();
+			} else if (trustAll) {
+				trustManagers = new TrustManager[] {new X509TrustManager() {
+					
+					@Override
+					public X509Certificate[] getAcceptedIssuers() {
+						return new X509Certificate[0];
+					}
+					
+					@Override
+					public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {}
+					
+					@Override
+					public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {}
+				}};
 			} else {
 				trustManagers = null;
 			}

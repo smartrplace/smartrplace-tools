@@ -21,6 +21,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -137,13 +138,15 @@ public class FileUploadServlet extends HttpServlet  {
 					return null;
 				}
 				final AtomicBoolean first = new AtomicBoolean(true);
-				Files.list(dir)
-					.map(path -> path.getFileName().toString())
-					.forEach(path -> {
-						if (!first.getAndSet(false))
-							writer.write(',');
-						writer.write(path);
-					});
+				try (final Stream<Path> stream = Files.list(dir)) {
+					stream
+						.map(path -> path.getFileName().toString())
+						.forEach(path -> {
+							if (!first.getAndSet(false))
+								writer.write(',');
+							writer.write(path);
+						});
+				}
 			}
 			writer.flush();
 		} else if (accept.startsWith("application/octet-stream")) {
@@ -212,11 +215,12 @@ public class FileUploadServlet extends HttpServlet  {
 			return;
 		}
 		final String path = path0;
+		// TODO replace by standard multi part config
 		final MultipartConfigElement mce = new MultipartConfigElement(tempFolder.toString(), config.maxFileSize(), config.maxRequestSize(), (int) config.fileSizeThreshold());
-		final MultiPartInputStreamParser mpisp = new MultiPartInputStreamParser(req.getInputStream(), req.getContentType(), mce, tempFolder.toFile());
+		final MultiPartInputStreamParser mpisp = new MultiPartInputStreamParser(req.getInputStream(), req.getContentType(), mce, tempFolder.toFile()); 
 		final FileUploadConfiguration config = this.config;
 		mpisp.getParts();
-		final Part configPart = mpisp.getPart("config"); // fails due to jetty bug if we did not call mpisp.getParts() before
+		final Part configPart = mpisp.getPart("config"); // fails due to jetty bug if we did not call mpisp.getParts() before // https://github.com/eclipse/jetty.project/issues/2892
 	    final AtomicBoolean success = new AtomicBoolean(true);
 	    final AtomicInteger response = new AtomicInteger(-1);
 	    final StringBuilder report = new StringBuilder();
@@ -295,12 +299,24 @@ public class FileUploadServlet extends HttpServlet  {
 				    		if (entry == null)
 				    			break;
 				    		final Path targetFile = dir.resolve(entry.getName());
+				    		final Path parent = targetFile.getParent();
+				    		final boolean existed = Files.exists(parent);
+				    		if (!existed) {
+				    			Files.createDirectories(parent);
+				    		}
 				    		try {
-					    		Files.createDirectories(targetFile.getParent());
-					    		Files.copy(zis, targetFile, StandardCopyOption.REPLACE_EXISTING);
-				    		} catch(IOException | SecurityException e) {
+				    			AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
+						    		Files.copy(zis, targetFile, StandardCopyOption.REPLACE_EXISTING);
+							    	return null;
+						    	}, ctx);
+				    		} catch(SecurityException | PrivilegedActionException e) {
 				    			logger.warn("Failed to unzip file", e);
 				    	    	success.set(false);
+				    	    	if (!existed) {
+				    	    		try {
+				    	    			Files.delete(parent);
+				    	    		} catch (Exception ignore) {}
+				    	    	}
 				    		}
 				    	}
 				    } catch (IOException e) {
@@ -359,6 +375,8 @@ public class FileUploadServlet extends HttpServlet  {
 	}
 	
 	private static boolean prefixSuffiXMatch(final Path path, final FileConfiguration config) {
+		if (config.filePrefix == null)
+			return false;
 		final String filename = path.getFileName().toString();
 		return filename.startsWith(config.filePrefix) && (config.fileEnding == null || filename.endsWith(config.fileEnding)); 
 	}

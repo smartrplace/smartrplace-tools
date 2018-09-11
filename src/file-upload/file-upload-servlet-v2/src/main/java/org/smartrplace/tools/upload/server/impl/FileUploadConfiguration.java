@@ -26,13 +26,13 @@ public @interface FileUploadConfiguration {
 	 * Allowed maximum path length (does not include the file name)
 	 * @return
 	 */
-	int maxPathLength() default 40;
+	int maxPathLength() default 50;
 
 	/**
 	 * Allowed maximum file name length.
 	 * @return
 	 */
-	int maxFileNameLength() default 25;
+	int maxFileNameLength() default 50;
 
 	/**
 	 * The maximum allowed file size

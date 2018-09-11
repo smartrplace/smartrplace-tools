@@ -13,33 +13,19 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Dictionary;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.ops4j.pax.exam.Configuration;
-import org.ops4j.pax.exam.CoreOptions;
-import org.ops4j.pax.exam.MavenUtils;
-import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.http.context.ServletContextHelper;
-import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
-import org.smartrplace.tools.servlet.api.ServletAccessControl;
-import org.smartrplace.tools.servlet.api.ServletConstants;
 import org.smartrplace.tools.upload.api.FileConfiguration;
 import org.smartrplace.tools.upload.utils.DateTimeUtils;
 import org.junit.Assert;
@@ -51,59 +37,7 @@ import org.junit.Assert;
  * 
  */
 @ExamReactorStrategy(PerClass.class)
-public class FileUploadTest extends TestBase {
-
-	private ServiceRegistration<ServletContextHelper> contextReg;
-	private ServiceRegistration<ServletAccessControl> contextReg2;
-	
-	
-	@Configuration
-	public Option[] configuration() throws IOException {
-		final Option[] superConf = super.configuration();
-		final Option[] newArray = new Option[superConf.length+1];
-		System.arraycopy(superConf, 0, newArray, 0, superConf.length);
-		newArray[superConf.length] = CoreOptions.composite(ogemaBundles());
-		return newArray;
-	}
-	
-	public Option[] ogemaBundles() {
-		return new Option[] {
-			CoreOptions.wrappedBundle(CoreOptions.maven("org.smartrplace.tools", "smartrplace-servlet-api", "0.0.1-SNAPSHOT"))
-		};
-	}
-	
-	@Before
-	public void registerFilter() throws IOException, BundleException {
-//		servletApi = ctx.installBundle("test:servlet-api", TinyBundles.bundle()
-//			.add(ServletAccessControl.class)
-//			.add(ServletConstants.class)
-//			.set("Export-Package", ServletAccessControl.class.getPackage().getName())
-//			.build());
-//		servletApi.start();
-		final Dictionary<String, Object> properties = new Hashtable<>(4);
-		properties.put(HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_NAME, ServletConstants.CONTEXT_NAME);
-		properties.put(HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_PATH, ServletConstants.DEFAULT_PATH_PREFIX);
-		this.contextReg = ctx.registerService(ServletContextHelper.class, new TestContextHelper(), properties);
-		this.contextReg2 = ctx.registerService(ServletAccessControl.class, new TestAccessControl(), properties);
-	}
-	
-	@After
-	public void unregisterFilter() throws BundleException {
-		if (contextReg != null)
-			contextReg.unregister();
-		if (contextReg2 != null)
-			contextReg2.unregister();
-	}
-	
-	@Test
-	public void startupWorks() throws IOException, InvalidSyntaxException, InterruptedException {
-//		final org.osgi.service.cm.Configuration[] configs = ca.listConfigurations(null);
-//		if (configs == null)
-//			System.out.println("  null");
-//		else
-//			Arrays.stream(configs).forEach(cfg -> System.out.println(" Config " + cfg.getPid() + ": " + cfg));
-		checkBundleStarted("org.smartrplace.tools.file-upload-servlet-v2");
-	}
+public class FileUploadTest extends SimpleContextTestBase {
 	
 	@Test
 	public void servletWorks() throws URISyntaxException, InterruptedException, ExecutionException, AssertionError, IOException {
@@ -130,10 +64,13 @@ public class FileUploadTest extends TestBase {
 			throw e;
 		}
 		Assert.assertEquals("Unexpected file upload response: " + response.getStatusLine().getReasonPhrase(), 200, response.getStatusLine().getStatusCode());
-		final Path uploaded = Files.list(uploadFolder)
+		final Path uploaded;
+		try (final Stream<Path> stream2 = Files.list(uploadFolder)) {
+			uploaded = stream2
 				.filter(Files::isRegularFile)
 				.filter(file -> file.getFileName().toString().startsWith(cfg.filePrefix))
 				.findAny().orElseThrow(() -> new AssertionError("Uploaded file does not exist."));
+		}
 		try {
 			final String content = Files.readAllLines(uploaded).stream().collect(Collectors.joining());
 			Assert.assertEquals("unexpected file content in uploaded file", test, content);
@@ -167,10 +104,13 @@ public class FileUploadTest extends TestBase {
 			throw e;
 		}
 		Assert.assertEquals("Unexpected file upload response: " + response.getStatusLine().getReasonPhrase(), 200, response.getStatusLine().getStatusCode());
-		final Path uploaded = Files.list(uploadFolder)
-			.filter(Files::isRegularFile)
-			.filter(file -> file.getFileName().toString().startsWith(testFilePrefix))
-			.findAny().orElseThrow(() -> new AssertionError("Uploaded file does not exist."));
+		final Path uploaded;
+		try (final Stream<Path> stream2 = Files.list(uploadFolder)) {
+			uploaded = stream2
+					.filter(Files::isRegularFile)
+					.filter(file -> file.getFileName().toString().startsWith(testFilePrefix))
+					.findAny().orElseThrow(() -> new AssertionError("Uploaded file does not exist."));
+		}
 		try {
 			final String content = Files.readAllLines(uploaded).stream().collect(Collectors.joining());
 			Assert.assertEquals("unexpected file content in uploaded file", test, content);
@@ -206,10 +146,13 @@ public class FileUploadTest extends TestBase {
 			throw e;
 		}
 		Assert.assertEquals("Unexpected file upload response: " + response.getStatusLine().getReasonPhrase(), 200, response.getStatusLine().getStatusCode());
-		final List<Path> uploaded = Files.list(uploadFolder)
+		final List<Path> uploaded;
+		try (final Stream<Path> stream2 = Files.list(uploadFolder)) {
+			uploaded = stream2
 				.filter(Files::isRegularFile)
 				.filter(file -> DateTimeUtils.parseAsInstant(file.getFileName().toString()) != null)
 				.collect(Collectors.toList());
+		}
 		Assert.assertFalse("Uploaded file does not exist.", uploaded.isEmpty());
 		Assert.assertEquals("More files found than expected", expectedNrFiles, uploaded.size());
 		return uploaded;

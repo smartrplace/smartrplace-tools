@@ -46,7 +46,7 @@ public class TestBase {
 
 	private static final String slf4jVersion = "1.7.25";
 	static final String uploadVersion = "0.0.1-SNAPSHOT";
-	private static final int HTTP_PORT = 4712;
+	static final int HTTP_PORT = 4712;
 	protected static final Path configFile = Paths.get("data/test.config");
 	protected static final Path osgiStorage = Paths.get("data/osgi-storage");
 	static final Path uploadFolder = Paths.get(FileUploadConstants.DEFAULT_UPLOAD_FOLDER).resolve(TestContextHelper.TEST_USER);
@@ -151,13 +151,30 @@ public class TestBase {
 	protected Bundle checkBundleStarted(final String symbolidName) {
 		final Bundle bundle = Arrays.stream(ctx.getBundles())
 			.filter(b -> symbolidName.equals(b.getSymbolicName()))
-			.findAny().orElseThrow(() -> new AssertionError("File upload context bundle not found"));
+			.findAny().orElseThrow(() -> new AssertionError("Bundle not found: " + symbolidName));
 		Assert.assertEquals(symbolidName + " inactive",Bundle.ACTIVE, bundle.getState());
 		return bundle;
 	}
 	
 	protected static final String nextFilePrefix() {
 		return "test" + cnt.getAndIncrement();
+	}
+	
+	protected static Path stringToTempFile(final String string, final Path baseFolder) throws IOException {
+		final InputStream stream = new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8));
+		final String testFilePrefix = nextFilePrefix();
+		final String testFilename = testFilePrefix + ".txt";
+		final Path testFile = baseFolder.resolve(testFilename);
+		Files.copy(stream, testFile, StandardCopyOption.REPLACE_EXISTING);
+		return testFile;
+	}
+	
+	protected static Path stringToFile(final String string, final Path file) throws IOException {
+		final InputStream stream = new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8));
+		final String testFilePrefix = nextFilePrefix();
+		final String testFilename = testFilePrefix + ".txt";
+		Files.copy(stream, file, StandardCopyOption.REPLACE_EXISTING);
+		return file;
 	}
 	
 	// here we use the default values where possible
@@ -171,8 +188,8 @@ public class TestBase {
 		final Map<String, Object> properties = new HashMap<>(properties0);
 		final Map<String, Object> clientProps = new HashMap<>(4);
 		clientProps.put("remoteUrl", "http://localhost:" + HTTP_PORT + ServletConstants.DEFAULT_PATH_PREFIX + FileUploadConstants.PATH);
-		clientProps.put("remoteUser", "test"); // in this test setting the user is ignored
-		clientProps.put("remotePw", "test");
+		clientProps.put("remoteUser", TestContextHelper.TEST_USER); // in this test setting the user is ignored
+		clientProps.put("remotePw", TestContextHelper.TEST_USER);
 		properties.put(FileUploadClient.CLIENT_PID, clientProps);
 		properties.put(":configurator:version", "1");
 		properties.put(":configurator:symbolic-name", "initConfig");
