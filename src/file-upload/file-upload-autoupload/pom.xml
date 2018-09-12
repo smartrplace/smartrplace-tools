@@ -22,6 +22,10 @@
                 	<instructions>
                 		<Export-Package></Export-Package>
                 	</instructions>
+                	<!-- requires executor service -->
+               		<Require-Capability>
+               			smartrplace.housekeeping; filter:="(&amp;(version&gt;=1.0)(!(version&gt;=2.0)))"
+               		</Require-Capability>
                 </configuration>                
             </plugin>
         </plugins>

@@ -39,6 +39,9 @@
                         	org.apache.felix.service.command;resolution:=optional;version="[0, 2)",
                         	*
                         </Import-Package>
+                        <Provide-Capability>
+                			smartrplace.housekeeping; version:Version="1.0.0"
+                		</Provide-Capability>
                     </instructions>
                 </configuration>
             </plugin>

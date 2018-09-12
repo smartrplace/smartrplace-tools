@@ -4,15 +4,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,7 +25,6 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
@@ -51,6 +50,9 @@ import org.smartrplace.tools.exec.ExecutorConstants;
 		configurationPolicy=ConfigurationPolicy.OPTIONAL,
 		property={
 				"osgi.command.scope=housekeeping",
+				"osgi.command.function=getExecTime",
+				"osgi.command.function=getExecTimeFraction",
+				"osgi.command.function=getIdleTime",
 				"osgi.command.function=getTasks",
 				"osgi.command.function=isTaskAlive",
 				"osgi.command.function=restartTask",
@@ -61,10 +63,11 @@ import org.smartrplace.tools.exec.ExecutorConstants;
 public class HousekeepingExecService {
 
 	private final Logger logger = LoggerFactory.getLogger(HousekeepingExecService.class);
-	private final CompletableFuture<ScheduledExecutorService> exec = new CompletableFuture<ScheduledExecutorService>();
+	private final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor((task) -> new Thread(task, "housekeeping-thread"));
+	private final CompletableFuture<HousekeepingServiceConfig> config = new CompletableFuture<HousekeepingServiceConfig>();
 	private final ConcurrentMap<Runnable, CompletableFuture<?>> submissionFutures = new ConcurrentHashMap<>();
-	private final ConcurrentMap<Runnable, ScheduledFuture<?>> futures = new ConcurrentHashMap<>();
-	private volatile HousekeepingServiceConfig config;
+	private final ConcurrentMap<TaskWrapper, ScheduledFuture<?>> futures = new ConcurrentHashMap<>();
+	private volatile long startTimeMillis;
 
 	@Reference(
 			target="(&(" + ExecutorConstants.TASK_DELAY + "=*)(" + ExecutorConstants.TASK_PERIOD + "=*))",
@@ -99,29 +102,38 @@ public class HousekeepingExecService {
 		final long period0 = ((Long) period).longValue();
 		final long delay1 = unit.getDuration().multipliedBy(delay0).toMillis();
 		final long period1 = unit.getDuration().multipliedBy(period0).toMillis();
-		
-		if (period1 <= 0 || period1 <= config.minPeriodMs()) {
-			logger.warn("Task service period too small: {}. Minimum period set: {}", period1, config.minPeriodMs());
-			return;
-		}
 		final Runnable task = taskService.getService();
-		logger.info("New housekeeping task {} with period {}, initial delay {}", task, period1, delay1);
-		submit(task, delay1, period1);
+		synchronized (this) {
+			submissionFutures.put(task, config.thenAcceptAsync(cfg -> {
+				synchronized(HousekeepingExecService.this) {
+					if (submissionFutures.remove(task) == null) // task has been removed
+						return;
+					if (period1 <= 0 || period1 <= cfg.minPeriodMs()) {
+						logger.warn("Task service period too small: {}. Minimum period set: {}", period1, cfg.minPeriodMs());
+						taskService.ungetService(task);
+						return;
+					}
+					final TaskWrapper wrapper = new TaskWrapper(task); 
+					submit(wrapper, delay1, period1);
+				}
+				logger.info("New housekeeping task {} with period {}, initial delay {}", task, period1, delay1);
+			}));
+		}
 	}
 	
-	private final void submit(final Runnable task, final long delay, final long period) {
-		submissionFutures.put(task, exec.thenAcceptAsync(ex -> {
-			futures.put(task, ex.scheduleWithFixedDelay(task, delay, period, TimeUnit.MILLISECONDS));
-			submissionFutures.remove(task);
-		}));
+	private final void submit(final TaskWrapper task, final long delay, final long period) {
+		futures.put(task, exec.scheduleWithFixedDelay(task, delay, period, TimeUnit.MILLISECONDS));
 	}
 	
 	protected void removeTask(ComponentServiceObjects<Runnable> taskService) {
 		final Runnable task = taskService.getService();
-		final CompletableFuture<?> submissionFuture = submissionFutures.remove(task);
-		if (submissionFuture != null)
-			submissionFuture.cancel(true);
-		final ScheduledFuture<?> future = futures.remove(task);
+		final ScheduledFuture<?> future;
+		synchronized (this) {
+			final CompletableFuture<?> submissionFuture = submissionFutures.remove(task);
+			if (submissionFuture != null)
+				submissionFuture.cancel(true);
+			future = futures.remove(new TaskWrapper(task));
+		}
 		if (future != null) {
 			future.cancel(true);
 			logger.info("Removing housekeeping task {}", task);
@@ -132,55 +144,48 @@ public class HousekeepingExecService {
 	
 	@Activate
 	protected void activate(HousekeepingServiceConfig config) {
-		this.config = config;
-		this.exec.complete(Executors.newSingleThreadScheduledExecutor((task) -> new Thread(task, "housekeeping-thread")));
+		this.startTimeMillis = System.currentTimeMillis();
+		this.config.complete(config);
 		logger.debug("Housekeeping executor started with configuration: min period: {} ms, wait time: {} ms", config.minPeriodMs(), config.waitTimeOnShutdownMs());
-	}
-	
-	@Modified
-	protected void modified(HousekeepingServiceConfig config) {
-		logger.debug("Housekeeping executor received new configuration. Min period: {} ms, wait time: {} ms", config.minPeriodMs(), config.waitTimeOnShutdownMs());
-		this.config = config;
 	}
 	
 	@Deactivate
 	protected void deactivate() {
-		this.exec.cancel(false);
-		ScheduledExecutorService exec = null;
+		exec.shutdown();
+		HousekeepingServiceConfig config = null;
 		try {
-			exec = this.exec.getNow(null);
-		} catch (CancellationException | CompletionException expected) {}
-		if (exec != null) {
-			exec.shutdown();
-			final long waitTime = config.waitTimeOnShutdownMs();
-			if (!exec.isTerminated() && waitTime > 0) {
+			config = this.config.getNow(null);
+		} catch (Exception ignore) {}
+		final long waitTime = config == null ? 0 : config.waitTimeOnShutdownMs();
+		if (!exec.isTerminated() && waitTime > 0) {
+			try {
+				exec.awaitTermination(waitTime, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
 				try {
-					exec.awaitTermination(waitTime, TimeUnit.MILLISECONDS);
-				} catch (InterruptedException e) {
-					try {
-						Thread.currentThread().interrupt();
-					} catch (SecurityException ok) {}
-				}
+					Thread.currentThread().interrupt();
+				} catch (SecurityException ok) {}
 			}
-			if (!exec.isTerminated()) {
-				final int nr = exec.shutdownNow().size();
-				logger.warn("Housekeeping exec service completed with unfinished tasks: {}",nr);
-			}
+		}
+		if (!exec.isTerminated()) {
+			final int nr = exec.shutdownNow().size();
+			logger.warn("Housekeeping exec service completed with unfinished tasks: {}",nr);
 		}
 	}
 	
 	@Descriptor("Get all active tasks. Returns a map task -> hash code.")
 	public Map<Runnable, Integer> getTasks() {
 		return futures.keySet().stream()
+			.map(TaskWrapper::getTask)
 			.collect(Collectors.toMap(Function.identity(), System::identityHashCode));
 	}
 	
 	@Descriptor("Stop all tasks with the provided identity hash code. Returns the cancelled tasks.")
 	public Collection<Runnable> stopTask(@Descriptor("The hash code of the task to be canceled") int identityHashCode) {
 		return futures.entrySet().stream()
-			.filter(entry -> System.identityHashCode(entry.getKey()) == identityHashCode)
+			.filter(entry -> System.identityHashCode(entry.getKey().getTask()) == identityHashCode)
 			.filter(entry -> entry.getValue().cancel(true))
 			.map(Map.Entry::getKey)
+			.map(TaskWrapper::getTask)
 			.collect(Collectors.toList());
 	}
 	
@@ -189,12 +194,12 @@ public class HousekeepingExecService {
 			@Descriptor("The hash code of the task to be checked. If absent, all tasks will be checked.")
 			@Parameter(names= {"-h", "--hashcode"}, absentValue="-1")
 			int identityHashCode) {
-		Stream<Map.Entry<Runnable, ScheduledFuture<?>>> stream = futures.entrySet().stream();
+		Stream<Map.Entry<TaskWrapper, ScheduledFuture<?>>> stream = futures.entrySet().stream();
 		if (identityHashCode != -1)
 			stream = stream
 				.filter(entry -> System.identityHashCode(entry.getKey()) == identityHashCode);
 		return stream
-				.collect(Collectors.toMap(Map.Entry::getKey, entry -> !entry.getValue().isCancelled()));
+				.collect(Collectors.toMap(entry -> entry.getKey().getTask(), entry -> !entry.getValue().isCancelled()));
 	}
 	
 	@Descriptor("Restart all tasks (with the provided identity hash code, if any) which have been cancelled. Returns the "
@@ -208,7 +213,7 @@ public class HousekeepingExecService {
 			final int identityHashCode,
 			@Descriptor("The initial delay before the first task execution") long delay,
 			@Descriptor("The period between two task executions") long period
-		) {
+		) throws InterruptedException, ExecutionException, TimeoutException {
 		if (period <= 0) {
 			System.out.println("Period must be positive, got "+ period);
 			return Collections.emptyList();
@@ -221,20 +226,68 @@ public class HousekeepingExecService {
 			return Collections.emptyList();
 		}
 		final long period1 = TimeUnit.MILLISECONDS.convert(period, unit);
-		if (period1 < config.minPeriodMs()) {
-			System.out.println("Period is below the configured threshold of " + config.minPeriodMs() + " ms.");
-			return Collections.emptyList();
-		}
-		Stream<Map.Entry<Runnable, ScheduledFuture<?>>> stream = futures.entrySet().stream();
-		if (identityHashCode != -1)
-			stream = stream
-				.filter(entry -> System.identityHashCode(entry.getKey()) == identityHashCode);
-		final Collection<Runnable> tasks = stream
-			.filter(entry -> entry.getValue().isCancelled())
-			.map(Map.Entry::getKey)
-			.collect(Collectors.toList());
-		tasks.forEach(task -> submit(task, delay, period1));
-		return tasks;
+		return config.<Collection<Runnable>> thenApplyAsync(cfg -> {
+			if (period1 < cfg.minPeriodMs()) {
+				System.out.println("Period is below the configured threshold of " + cfg.minPeriodMs() + " ms.");
+				return Collections.emptyList();
+			}
+			Stream<Map.Entry<TaskWrapper, ScheduledFuture<?>>> stream = futures.entrySet().stream();
+			if (identityHashCode != -1)
+				stream = stream
+					.filter(entry -> System.identityHashCode(entry.getKey().getTask()) == identityHashCode);
+			final Collection<TaskWrapper> tasks = stream
+				.filter(entry -> entry.getValue().isCancelled())
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toList());
+			tasks.forEach(task -> submit(task, delay, period1));
+			return tasks.stream()
+					.map(TaskWrapper::getTask)
+					.collect(Collectors.toList());
+		}).get(30, TimeUnit.SECONDS);
 	}
+	
+	@Descriptor("Get total run time for all tasks or a specific task")
+	public long getExecTime(
+			@Descriptor("The time unit. Default is \"SECONDS\".")
+			@Parameter(names= {"-u", "--unit"}, absentValue="SECONDS")
+			final String timeUnit,
+			@Descriptor("The hash code of the task to be measured. If absent or equal to -1, all tasks will be included.")
+			@Parameter(names= {"-h", "--hashcode"}, absentValue="-1")
+			final int identityHashCode
+			) {
+		final TimeUnit unit = TimeUnit.valueOf(timeUnit.trim().toUpperCase());
+		Stream<TaskWrapper> stream = futures.keySet().stream();
+		if (identityHashCode != -1)
+			stream = stream.filter(task -> System.identityHashCode(task.getTask()) == identityHashCode);
+		return stream
+			.mapToLong(TaskWrapper::getExecutionTimeMillis)
+			.map(millis -> unit.convert(millis, TimeUnit.MILLISECONDS))
+			.sum();
+	}
+	
+	@Descriptor("Get the run time fraction for all tasks or a specific task")
+	public float getExecTimeFraction(
+			@Descriptor("The hash code of the task to be measured. If absent or equal to -1, all tasks will be included.")
+			@Parameter(names= {"-h", "--hashcode"}, absentValue="-1")
+			final int identityHashCode
+			) {
+		final long activeTime = getExecTime(TimeUnit.MILLISECONDS.toString(), identityHashCode);
+		final long totalTime = System.currentTimeMillis() - startTimeMillis;
+		return ((float) activeTime) / ((float) totalTime);
+	}
+	
+	@Descriptor("Get the idle time of the service")
+	public long getIdleTime(
+			@Descriptor("The time unit. Default is \"SECONDS\".")
+			@Parameter(names= {"-u", "--unit"}, absentValue="SECONDS")
+			final String timeUnit
+			) {
+		final TimeUnit unit = TimeUnit.valueOf(timeUnit.trim().toUpperCase());
+		final long activeTime = getExecTime(TimeUnit.MILLISECONDS.toString(), -1);
+		final long totalTime = System.currentTimeMillis() - startTimeMillis;
+		return unit.convert(totalTime - activeTime, TimeUnit.MILLISECONDS);
+	}
+	
+	
 	
 }

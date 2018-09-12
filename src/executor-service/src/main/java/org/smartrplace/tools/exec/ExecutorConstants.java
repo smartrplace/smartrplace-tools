@@ -31,4 +31,6 @@ public class ExecutorConstants {
 	
 	public static final String HOUSEKEEPING_EXEC_PID = "org.smartrplace.tools.exec.Housekeeping";	
 	
+	public static final String HOUSEKEEPING_EXEC_CAPABILITY = "smartrplace.housekeeping";
+	
 }
