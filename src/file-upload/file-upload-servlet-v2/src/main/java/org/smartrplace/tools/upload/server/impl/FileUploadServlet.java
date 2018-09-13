@@ -59,7 +59,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-// TODO config for incremental file uploader (SlotsDb)
+// TODO 
+// config for incremental file uploader (SlotsDb)
+// config merging... add file config to existing config file
 @Component(
 		service=Servlet.class,
 		property = {

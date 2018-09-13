@@ -21,24 +21,23 @@ import org.osgi.service.component.ComponentException;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
-import org.osgi.service.component.annotations.Modified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.smartrplace.tools.exec.ExecutorConstants;
 import org.smartrplace.tools.upload.api.FileConfiguration;
+import org.smartrplace.tools.upload.api.FileConfigurations;
 import org.smartrplace.tools.upload.server.FileUploadConstants;
 import org.smartrplace.tools.upload.utils.DateTimeUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
-// TODO implement clean up method below
 @Component(
 		service=Runnable.class,
 		property= {
-				ExecutorConstants.TASK_DELAY +":Long=1",
-				ExecutorConstants.TASK_PERIOD + ":Long=1",
-				ExecutorConstants.TASK_PROPERTIES_TIME_UNIT + "=DAYS"
+				ExecutorConstants.TASK_DELAY +":Long=6",
+				ExecutorConstants.TASK_PERIOD + ":Long=6",
+				ExecutorConstants.TASK_PROPERTIES_TIME_UNIT + "=HOURS"
 		},
 		// using the same PID as the upload service, to ensure we get the same props
 		configurationPid=FileUploadConstants.FILE_UPLOAD_PID,
@@ -47,11 +46,10 @@ import com.fasterxml.jackson.databind.ObjectReader;
 public class FileUploadHousekeeping implements Runnable {
 	
 	private static final Logger logger = LoggerFactory.getLogger(FileUploadHousekeeping.class);
-	private final ObjectReader jsonReader = new ObjectMapper().readerFor(FileConfiguration.class);
+	private final ObjectReader jsonReader = new ObjectMapper().readerFor(FileConfigurations.class);
 	private volatile FileUploadConfiguration config;
 	
 	@Activate
-	@Modified
 	protected void activate(FileUploadConfiguration config) {
 		this.config = config;
 		try {
@@ -67,7 +65,7 @@ public class FileUploadHousekeeping implements Runnable {
 		try (final Stream<Path> stream = Files.list(Paths.get(config.uploadFolder()))) {
 			stream
 				.filter(Files::isDirectory)
-				.flatMap(folder -> getConfigFilesRecursively(folder, config))
+				.flatMap(this::getConfigFilesRecursively)
 				.forEach(this::cleanUp);
 		} catch (IOException | SecurityException e) {
 			logger.error("Failed to execute housekeeping task",e);
@@ -75,14 +73,14 @@ public class FileUploadHousekeeping implements Runnable {
 	}
 
 	private void cleanUp(Path configFile) {
-		final FileConfiguration config;
+		final FileConfigurations configs;
 		try (final Reader reader = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
-			 config = jsonReader.readValue(reader);
+			 configs = jsonReader.readValue(reader);
 		} catch (Exception e) {
-			logger.warn("Failed to clean up config {}", configFile);
+			logger.warn("Failed to clean up config {}", configFile, e);
 			return;
 		}
-		cleanUpFiles(configFile.getParent(), config);
+		configs.configurations.forEach(config -> cleanUpFiles(configFile.getParent(), config));
 	}
 	
 	private static void cleanUpFiles(final Path directory, final FileConfiguration config) {
@@ -142,10 +140,14 @@ public class FileUploadHousekeeping implements Runnable {
 		for (Map.Entry<Path, Long> entry : fileSizes.entrySet()) {
 			final Path next = entry.getKey();
 			try {
-				if (Files.isDirectory(next))
+				if (Files.isDirectory(next)) {
 					FileUtils.deleteDirectory(next.toFile());
-				else
+					logger.trace("Deleted directory {}", next);
+				}
+				else {
 					Files.delete(next);
+					logger.trace("Deleted file {}", next);
+				}
 			} catch (IOException | SecurityException | IllegalArgumentException e) {
 				logger.warn("Failed to delete file {}", next, e);
 			}
@@ -177,7 +179,7 @@ public class FileUploadHousekeeping implements Runnable {
 		return filename.startsWith(config.filePrefix) && (config.fileEnding == null || filename.endsWith(config.fileEnding)); 
 	}
 	
-	private static Stream<Path> getConfigFilesRecursively(final Path base, FileUploadConfiguration config) {
+	private Stream<Path> getConfigFilesRecursively(final Path base) {
 		final Builder<Path> builder = Stream.builder();
 		listConfigFilesRecursively(base, config, builder);
 		return builder.build();

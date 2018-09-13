@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,7 +22,6 @@ import javax.inject.Inject;
 import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
@@ -52,8 +52,12 @@ public class TestBase {
 	static final Path uploadFolder = Paths.get(FileUploadConstants.DEFAULT_UPLOAD_FOLDER).resolve(TestContextHelper.TEST_USER);
 	private static final AtomicInteger cnt = new AtomicInteger(0);
 	
-	public TestBase() {
-		try (final InputStream in = new ByteArrayInputStream(getConfigProperty().getBytes(StandardCharsets.UTF_8))) {
+	protected TestBase() {
+		this(0, 0);
+	}
+	
+	protected TestBase(final long period, final long delay) {
+		try (final InputStream in = new ByteArrayInputStream(getConfigProperty(period, delay).getBytes(StandardCharsets.UTF_8))) {
 			Files.createDirectories(configFile.getParent());
 			Files.copy(in, configFile, StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e)
@@ -133,8 +137,8 @@ public class TestBase {
 		return Integer.parseInt(version); 
 	}
 
-	protected String getConfigProperty() {
-		final Object props = convertToJson(configPropertyMap());
+	protected String getConfigProperty(final long period, final long delay) {
+		final Object props = convertToJson(configPropertyMap(period, delay));
 		return props.toString().replace('=', ':').replace("{", "\n{\n").replace("}", "\n}\n");
 	}
 	
@@ -178,7 +182,7 @@ public class TestBase {
 	}
 	
 	// here we use the default values where possible
-	protected Map<String, Object> configPropertyMap() {
+	protected Map<String, Object> configPropertyMap(long period, long delay) {
 		final Map<String, Map<String, Object>> properties0 = Arrays
 				.stream(new String[] { 
 						ExecutorConstants.HOUSEKEEPING_EXEC_PID,
@@ -191,6 +195,13 @@ public class TestBase {
 		clientProps.put("remoteUser", TestContextHelper.TEST_USER); // in this test setting the user is ignored
 		clientProps.put("remotePw", TestContextHelper.TEST_USER);
 		properties.put(FileUploadClient.CLIENT_PID, clientProps);
+		final Map<String, Object> servletProps = new HashMap<>(4);
+		if (delay > 0 && period > 0) {
+			servletProps.put(ExecutorConstants.TASK_DELAY, delay);
+			servletProps.put(ExecutorConstants.TASK_PERIOD, period);
+			servletProps.put(ExecutorConstants.TASK_PROPERTIES_TIME_UNIT, ChronoUnit.MILLIS.name());
+		}
+		properties.put(FileUploadConstants.FILE_UPLOAD_PID, servletProps);
 		properties.put(":configurator:version", "1");
 		properties.put(":configurator:symbolic-name", "initConfig");
 		return properties;
@@ -200,10 +211,6 @@ public class TestBase {
 	public void cleanDir() throws IOException {
 		Files.createDirectories(uploadFolder);
 		FileUtils.cleanDirectory(uploadFolder.toFile());
-	}
-	
-	@Test
-	public void startupWorks() throws Exception {
 	}
 	
 }

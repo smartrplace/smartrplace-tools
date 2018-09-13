@@ -19,6 +19,14 @@ import org.smartrplace.tools.servlet.api.ServletConstants;
 
 public class SimpleContextTestBase extends TestBase {
 
+	protected SimpleContextTestBase() {
+		this(0, 0);
+	}
+	
+	protected SimpleContextTestBase(long period, long delay) {
+		super(period, delay);
+	}
+	
 	private ServiceRegistration<ServletContextHelper> contextReg;
 	private ServiceRegistration<ServletAccessControl> contextReg2;
 	

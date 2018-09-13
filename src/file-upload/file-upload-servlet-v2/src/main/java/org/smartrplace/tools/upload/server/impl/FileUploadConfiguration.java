@@ -3,6 +3,10 @@ package org.smartrplace.tools.upload.server.impl;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.smartrplace.tools.upload.server.FileUploadConstants;
 
+/**
+ * All properties in this type are optional, so it suffices to
+ * create a configuration without any values, for the correct PID
+ */
 @ObjectClassDefinition
 public @interface FileUploadConfiguration {
 	
@@ -63,6 +67,6 @@ public @interface FileUploadConfiguration {
 	 * in which case they will be ignored by the housekeeping.
 	 * @return
 	 */
-	String configFileName() default "uploadConfig.json";
+	String configFileName() default FileUploadConstants.DEFAULT_CONFIG_FILE;
 	
 }

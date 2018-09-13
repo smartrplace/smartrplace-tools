@@ -28,7 +28,6 @@ import org.smartrplace.tools.exec.ExecutorConstants;
 import org.smartrplace.tools.servlet.api.ServletConstants;
 import org.smartrplace.tools.upload.server.FileUploadConstants;
 
-// TODO test for directories with multiple files, incremental updates
 @ExamReactorStrategy(PerClass.class)
 public class AutouploadTest extends SimpleContextTestBase {
 
