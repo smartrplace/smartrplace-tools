@@ -152,35 +152,37 @@ public class ContextHelperTest extends TestBase {
 				HttpServletResponse.SC_UNAUTHORIZED, response.getStatusLine().getStatusCode());
 	}
 	
-	
 	@Test
 	public void authorizedUserUploadWorks() throws Exception {
-		createUser("test", 5000);
-		final String test = "testString";
-		final byte[] bytes = test.getBytes(StandardCharsets.UTF_8);
-		final InputStream stream = new ByteArrayInputStream(bytes);
-		final FileConfiguration cfg = new FileConfiguration();
-		cfg.filePrefix = nextFilePrefix();
-		cfg.fileEnding = "json";
-		final Future<HttpResponse> future;
+		createUser(TestContextHelper.TEST_USER, 5000);
 		try {
-			future = client.upload(stream, bytes.length, null, null, cfg);
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw e;
-		}
-		final HttpResponse response;
-		try {
-			response = future.get(5, TimeUnit.SECONDS);
-		} catch (TimeoutException e) {
-			throw new AssertionError("file upload timed out");
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw e;
-		}
-		Assert.assertEquals("Unexpected file upload response: " + response.getStatusLine().getReasonPhrase(), 
-				HttpServletResponse.SC_OK, response.getStatusLine().getStatusCode());
-		removeUser("test");
+			final String test = "testString";
+			final byte[] bytes = test.getBytes(StandardCharsets.UTF_8);
+			final InputStream stream = new ByteArrayInputStream(bytes);
+			final FileConfiguration cfg = new FileConfiguration();
+			cfg.filePrefix = nextFilePrefix();
+			cfg.fileEnding = "json";
+			final Future<HttpResponse> future;
+			try {
+				future = client.upload(stream, bytes.length, null, null, cfg);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw e;
+			}
+			final HttpResponse response;
+			try {
+				response = future.get(5, TimeUnit.SECONDS);
+			} catch (TimeoutException e) {
+				throw new AssertionError("file upload timed out");
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw e;
+			}
+			Assert.assertEquals("Unexpected file upload response: " + response.getStatusLine().getReasonPhrase(), 
+					HttpServletResponse.SC_OK, response.getStatusLine().getStatusCode());
+		} finally {
+			removeUser(TestContextHelper.TEST_USER);
+		} 
 	}
 	
 

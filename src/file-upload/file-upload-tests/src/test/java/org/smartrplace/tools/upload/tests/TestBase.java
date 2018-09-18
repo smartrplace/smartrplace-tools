@@ -42,7 +42,7 @@ import org.smartrplace.tools.upload.server.FileUploadConstants;
  * 
  */
 @RunWith(PaxExam.class)
-public class TestBase {
+class TestBase {
 
 	private static final String slf4jVersion = "1.7.25";
 	static final String uploadVersion = "0.0.1-SNAPSHOT";
@@ -116,9 +116,9 @@ public class TestBase {
 				CoreOptions.mavenBundle("org.apache.httpcomponents", "httpasyncclient-osgi", "4.1.4"),
 				
 				CoreOptions.mavenBundle("org.smartrplace.tools", "executor-service", "0.0.1-SNAPSHOT").start(),
-				CoreOptions.mavenBundle("org.smartrplace.tools", "ssl-service", "0.0.1-SNAPSHOT").start(),
+				CoreOptions.mavenBundle("org.smartrplace.tools", "ssl-service", "0.0.1-SNAPSHOT"),
 				
-				CoreOptions.mavenBundle("org.smartrplace.tools", "file-upload-utils", uploadVersion).start(),
+				CoreOptions.mavenBundle("org.smartrplace.tools", "file-upload-utils", uploadVersion),
 				CoreOptions.mavenBundle("org.smartrplace.tools", "file-upload-servlet-v2", uploadVersion).start(),
 				CoreOptions.mavenBundle("org.smartrplace.tools", "file-upload-client-v2", uploadVersion).start(),
 				

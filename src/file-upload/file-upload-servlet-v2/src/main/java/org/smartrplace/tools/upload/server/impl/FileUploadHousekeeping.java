@@ -84,7 +84,7 @@ public class FileUploadHousekeeping implements Runnable {
 	}
 	
 	private static void cleanUpFiles(final Path directory, final FileConfiguration config) {
-		final NavigableMap<Instant, Path> fileMap;
+		final NavigableMap<Instant, FileInfo> fileMap;
 		try (final Stream<Path> files = Files.list(directory)) {
 			final Iterator<Path> it = files.iterator();
 			fileMap = new TreeMap<>();
@@ -99,7 +99,9 @@ public class FileUploadHousekeeping implements Runnable {
 					logger.warn("Filename timestamp cannot be parsed {}",p);
 					continue;
 				}
-				fileMap.put(inst, p);
+				try {
+					fileMap.put(inst, new FileInfo(p, inst.toEpochMilli()));
+				} catch (IOException | SecurityException e) {}
 			}
 		} catch (Exception e) {
 			logger.warn("Failed to clean up in directory {}", directory);
@@ -111,64 +113,102 @@ public class FileUploadHousekeeping implements Runnable {
 		if (sz == 1)
 			return;
 		final int max = config.maxFilesToKeep;
-		if (max > 0 && max < sz) {
-			delete(fileMap, sz - max);
-		}
 		final long maxSize = config.maxSize;
-		if (maxSize > 0) {
-			final LinkedHashMap<Path, Long> fileSizes = new LinkedHashMap<>();
-			long totalSize = 0;
-			for (Path file : fileMap.values()) {
-				try {
-					final long size = Files.size(file);
-					fileSizes.put(file, size);
-					totalSize += size;
-				} catch (IOException | SecurityException e) {
-					logger.warn("Failed to determine size {}", file, e); 
-				}
-			}
-			if (totalSize > maxSize) {
-				fileSizes.remove(fileMap.lastEntry().getValue()); // do not remove the latest file
-				deleteSizeBased(fileSizes, totalSize - maxSize);
-			}
+		final long totalSize = fileMap.values().stream()
+				.mapToLong(info -> info.size)
+				.sum();
+		if ((max > 0 && max < sz) || (maxSize > 0 && totalSize > maxSize)) {
+			delete(fileMap, sz - max, totalSize - maxSize, config.deleteOldFilesFirst);
 		}
 	}
 	
 	
-	private static void deleteSizeBased(final LinkedHashMap<Path, Long> fileSizes, final long toDelete) {
+	private static void deleteSizeBased(final NavigableMap<Instant, FileInfo> files, final long toDelete) {
 		long deleted = 0;
-		for (Map.Entry<Path, Long> entry : fileSizes.entrySet()) {
-			final Path next = entry.getKey();
+		for (FileInfo info : files.values()) {
 			try {
-				if (Files.isDirectory(next)) {
-					FileUtils.deleteDirectory(next.toFile());
-					logger.trace("Deleted directory {}", next);
+				final Path file = info.file;
+				if (Files.isDirectory(file)) {
+					FileUtils.deleteDirectory(file.toFile());
+					logger.trace("Deleted directory {}", file);
 				}
 				else {
-					Files.delete(next);
-					logger.trace("Deleted file {}", next);
+					Files.delete(file);
+					logger.trace("Deleted file {}", file);
 				}
 			} catch (IOException | SecurityException | IllegalArgumentException e) {
-				logger.warn("Failed to delete file {}", next, e);
+				logger.warn("Failed to delete file {}", info.file, e);
 			}
-			deleted += entry.getValue();
+			deleted += info.size;
 			if (deleted >= toDelete)
 				return;
 		} 
 	}
 	
-	private static void delete(final NavigableMap<Instant, Path> files, final int toDelete) {
-		final Iterator<Path> valIt =files.values().iterator();
+	private static void delete(final NavigableMap<Instant, FileInfo> files, 
+			final int toDelete, final long sizeToDelete, final boolean deleteOldestFiles) {
+		final Iterator<FileInfo> valIt =files.values().iterator();
+		if (!valIt.hasNext())
+			return;
 		int deletionCnt = 0;
-		while (valIt.hasNext() && deletionCnt < toDelete) {
-			final Path next = valIt.next();
-			try {
-				Files.delete(next);
-				valIt.remove();
-			} catch (IOException | SecurityException e) {
-				logger.warn("Could not delete file {}", next, e);
+		long deletionCntSize = 0;
+		if (deleteOldestFiles || toDelete >= files.size()) {
+			while (valIt.hasNext() && (deletionCnt < toDelete || deletionCntSize < sizeToDelete) ) {
+				final FileInfo next = valIt.next();
+				try {
+					Files.delete(next.file);
+					valIt.remove();
+				} catch (IOException | SecurityException e) {
+					logger.warn("Could not delete file {}", next.file, e);
+				}
+				// we should increase the count independently of whether the deletion succeeded... otherwise we'd end up deleting the wrong files
+				deletionCnt++;
+				deletionCntSize += next.size;
 			}
-			deletionCnt++;
+		} else {
+			FileInfo lastFile = valIt.next();
+			while (valIt.hasNext() && (deletionCnt < toDelete || deletionCntSize < sizeToDelete)) {
+				final FileInfo next = valIt.next();
+				if (lastFile.size == next.size) { // if the size of two consecutive files is equal, there is a high probability of the files being equal...
+					try {
+						Files.delete(lastFile.file);
+						valIt.remove();
+					} catch (IOException | SecurityException e) {
+						logger.warn("Could not delete file {}", next.file, e);
+					}
+					deletionCnt++;
+					deletionCntSize += next.size;
+				}
+				lastFile = next;
+			}
+			outer : while (deletionCnt < toDelete || deletionCntSize < sizeToDelete) {
+				int missing = toDelete - deletionCnt;
+				if (missing <= 0) {
+					final int averageSize = (int) (files.values().stream()
+							.mapToLong(info -> info.size)
+							.sum() / files.size());
+					missing = Math.max(1, (int) (sizeToDelete / averageSize / 2));
+				}
+				final long first = files.firstKey().toEpochMilli();
+				final long last = files.lastKey().toEpochMilli();
+				for (int i=0; i < missing; i++) {
+					final long t = first + (last - first) * (long) Math.tanh(0.3 + i / 2.);
+					final Map.Entry<Instant, FileInfo> entry = files.ceilingEntry(Instant.ofEpochMilli(t));
+					if (entry == null) {
+						if (i == 0)
+							break outer;
+						break;
+					}
+					try {
+						Files.delete(entry.getValue().file);
+						files.remove(entry.getKey());
+					} catch (IOException | SecurityException e) {
+						logger.warn("Could not delete file {}", entry.getValue().file, e);
+					}
+					deletionCnt++;
+					deletionCntSize += entry.getValue().size;
+				}
+			}
 		}
 	}
 	

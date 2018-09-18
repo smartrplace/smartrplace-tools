@@ -90,7 +90,7 @@ public class SecurityTestBase {
 						CoreOptions.vmOption("--add-modules=java.xml.bind,java.xml.ws.annotation")
 					),
 				CoreOptions.junitBundles(),
-				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.scr", "2.1.6"),
+				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.scr", "2.1.7-SNAPSHOT"),
 				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.configadmin", "1.9.5-SNAPSHOT"),
 				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.configurator", "1.0.5-SNAPSHOT"),
 //				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.eventadmin", "1.5.0"),
