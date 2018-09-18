@@ -76,8 +76,11 @@ public class Autoupload implements Runnable {
 				LoggerFactory.getLogger(getClass()).warn("File does not exist {}", config.localPath());
 				return;
 			}
-			final FileConfiguration fileConfig = new FileConfiguration(); // TODO
-			setFilename(fileConfig, path.getFileName());
+			final FileConfiguration fileConfig = new FileConfiguration();
+			setFilename(fileConfig, path);
+			fileConfig.daysToKeepFile = config.daysToKeepFile();
+			fileConfig.maxSize = config.maxSize();
+			fileConfig.maxFilesToKeep = config.maxFilesToKeep();
 			final Collection<ServiceReference<FileUploadClient>> clients = ctx.getServiceReferences(FileUploadClient.class, "(remoteUrl=" + config.remoteUrl() + ")");
 			if (clients == null || clients.isEmpty()) {
 				LoggerFactory.getLogger(getClass()).warn("No appropriate client for url {}", config.remoteUrl());
@@ -125,13 +128,24 @@ public class Autoupload implements Runnable {
 		}
 	}
 	
-	private static void setFilename(final FileConfiguration config, final Path filename) {
+	private static void setFilename(final FileConfiguration config, Path filename) {
+		if (Files.isDirectory(filename)) {
+			config.filePrefix = "";
+			config.fileEnding = "";
+			return;
+		}
+		filename = filename.getFileName();
 		final String fl = filename.toString();
 		final int idx = fl.lastIndexOf('.');
 		final String prefix = idx > 0 ? fl.substring(0, idx) : fl;
 		config.filePrefix  =prefix;
 		if (idx > 0 && idx < fl.length()-1)
 			config.fileEnding = fl.substring(idx+1);
+	}
+	
+	@Override
+	public String toString() {
+		return "Autoupload [path=" + config.localPath() + ", url=" + config.remoteUrl() + "]";
 	}
 	
 }

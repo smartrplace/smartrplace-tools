@@ -32,6 +32,29 @@ public @interface AutouploadConfiguration {
 	boolean incrementalUpload() default false;
 	
 	/**
+	 * File will be deleted after the specified number of days.
+	 * Set to zero or a negative value to retain file forever.
+	 * @return
+	 */
+	long daysToKeepFile() default -1;
+	
+	/**
+	 * Maximum number of files (of the same name) to store.
+	 * Set to zero or a negative value to ignore the total number
+	 * of files. If {@link #overwrite} is true this is ignored.
+	 * @return
+	 */
+	int maxFilesToKeep() default 25;
+	
+	/**
+	 * This refers to the maximum size in bytes to store (sum of all versions
+	 * of one file). When the size is exceeded, some older files will be
+	 * deleted. The default value is 50MB.
+	 * @return
+	 */
+	long maxSize() default 50 * 1024 * 1024;
+	
+	/**
 	 * Date time format or empty string for millis (default)
 	 * @return
 	 */

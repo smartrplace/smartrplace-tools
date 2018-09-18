@@ -7,9 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -73,17 +73,19 @@ public class FileUploadHousekeeping implements Runnable {
 	}
 
 	private void cleanUp(Path configFile) {
-		final FileConfigurations configs;
-		try (final Reader reader = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
-			 configs = jsonReader.readValue(reader);
-		} catch (Exception e) {
-			logger.warn("Failed to clean up config {}", configFile, e);
-			return;
+		try {
+			final FileConfigurations configs;
+			try (final Reader reader = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
+				 configs = jsonReader.readValue(reader);
+			}
+			configs.configurations.forEach(config -> cleanUpFiles(configFile.getParent(), config));
+		} catch (IOException | SecurityException e) {
+			logger.error("Failed to execute housekeeping task for {}", configFile,e);
 		}
-		configs.configurations.forEach(config -> cleanUpFiles(configFile.getParent(), config));
 	}
 	
 	private static void cleanUpFiles(final Path directory, final FileConfiguration config) {
+		final Instant now = Instant.ofEpochMilli(System.currentTimeMillis());
 		final NavigableMap<Instant, FileInfo> fileMap;
 		try (final Stream<Path> files = Files.list(directory)) {
 			final Iterator<Path> it = files.iterator();
@@ -98,6 +100,21 @@ public class FileUploadHousekeeping implements Runnable {
 				if (inst == null) {
 					logger.warn("Filename timestamp cannot be parsed {}",p);
 					continue;
+				}
+				if (config.daysToKeepFile > 0) {
+					final Duration duration = Duration.between(inst, now);
+					if (duration.compareTo(Duration.ofDays(config.daysToKeepFile)) > 0) {
+						try {
+							if (Files.isDirectory(p)) {
+								FileUtils.deleteDirectory(p.toFile());
+							} else {
+								Files.delete(p);
+							}
+							continue;
+						} catch (IOException | IllegalArgumentException e) {
+							logger.warn("Failed to delete file {}", p, e);
+						}
+					}
 				}
 				try {
 					fileMap.put(inst, new FileInfo(p, inst.toEpochMilli()));
@@ -122,7 +139,7 @@ public class FileUploadHousekeeping implements Runnable {
 		}
 	}
 	
-	
+	/*
 	private static void deleteSizeBased(final NavigableMap<Instant, FileInfo> files, final long toDelete) {
 		long deleted = 0;
 		for (FileInfo info : files.values()) {
@@ -144,6 +161,7 @@ public class FileUploadHousekeeping implements Runnable {
 				return;
 		} 
 	}
+	*/
 	
 	private static void delete(final NavigableMap<Instant, FileInfo> files, 
 			final int toDelete, final long sizeToDelete, final boolean deleteOldestFiles) {
@@ -230,8 +248,8 @@ public class FileUploadHousekeeping implements Runnable {
 		Path thisConfig = folder.resolve(config.configFileName());
 		if (Files.isRegularFile(thisConfig))
 			streamBuilder.add(thisConfig);
-		try {
-			Files.list(folder)
+		try (final Stream<Path> stream = Files.list(folder)) {
+			stream
 				.filter(dir -> Files.isDirectory(dir))
 				.forEach(dir -> listConfigFilesRecursively(dir, config, streamBuilder));
 		} catch (IOException | SecurityException e) { // we do not throw an exception, rather ignore the folder

@@ -1,5 +1,7 @@
 package org.smartrplace.tools.upload.client.impl;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,6 +42,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.entity.ContentType;
+import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.InputStreamBody;
@@ -192,7 +195,7 @@ public class FileUploadClientImpl implements FileUploadClient {
 		};
 		return AccessController.doPrivileged((PrivilegedAction<Future<HttpResponse>>) () -> {
 			MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-			builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+			builder.setMode(HttpMultipartMode.STRICT);
 			builder.addPart("file", body);
 			
 			final String configJson;
@@ -203,7 +206,7 @@ public class FileUploadClientImpl implements FileUploadClient {
 			}
 			builder.addTextBody("config", configJson, ContentType.APPLICATION_JSON.withCharset(StandardCharsets.UTF_8));
 			HttpEntity entity = builder.build();
-			post.setEntity(entity);
+			post.setEntity(new EntityWrapper(entity));
 			return client.execute(post, clientContext, null);
 		});
 		
@@ -234,7 +237,7 @@ public class FileUploadClientImpl implements FileUploadClient {
 				: config0.filePrefix + "." + config0.fileEnding;
 		return AccessController.doPrivileged((PrivilegedAction<Future<HttpResponse>>) () -> {
 			MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-			builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+			builder.setMode(HttpMultipartMode.STRICT);
 			builder.addBinaryBody("file", file.toFile(), ct, targetFilename);
 			final String configJson;
 			try {
@@ -244,8 +247,7 @@ public class FileUploadClientImpl implements FileUploadClient {
 			}
 			builder.addTextBody("config", configJson, ContentType.APPLICATION_JSON.withCharset(StandardCharsets.UTF_8));
 			HttpEntity entity = builder.build();
-			//
-			post.setEntity(entity);
+			post.setEntity(new EntityWrapper(entity));
 			return client.execute(post, clientContext, null);
 		});
 	}
@@ -317,7 +319,7 @@ public class FileUploadClientImpl implements FileUploadClient {
 			}
 			final HttpPost post = new HttpPost(uriBuilder.build().toString());
 			MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-			builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+			builder.setMode(HttpMultipartMode.STRICT);
 //			builder.addPart("file", new FileBody(tempFile.toFile(), "temp.zip", "application/zip", "utf-8"));
 			builder.addBinaryBody("file", tempFile.toFile(), ContentType.create("application/zip"), "temp.zip"); 
 			final String configJson;
@@ -329,7 +331,7 @@ public class FileUploadClientImpl implements FileUploadClient {
 			builder.addTextBody("config", configJson, ContentType.APPLICATION_JSON.withCharset(StandardCharsets.UTF_8));
 			HttpEntity entity = builder.build();
 			//
-			post.setEntity(entity);
+			post.setEntity(new EntityWrapper(entity));
 			return client.execute(post, clientContext, new FutureCallback<HttpResponse>() {
 				
 				private final void cleanup() {
@@ -427,6 +429,26 @@ public class FileUploadClientImpl implements FileUploadClient {
 		if (nextDot >= 0)
 			filename = filename.substring(0, nextDot);
 		return DateTimeUtils.parseAsInstant(filename, format);
+	}
+
+	// FIXME why is this required? Bug in Httpcomponents? 
+	// https://github.com/apache/httpcomponents-client/blob/4.5.x/httpmime/src/main/java/org/apache/http/entity/mime/MultipartFormEntity.java
+	// See hard-coded limit of 35kB in #getContent
+	private static class EntityWrapper extends HttpEntityWrapper {
+		
+		public EntityWrapper(HttpEntity wrappedEntity) {
+			super(wrappedEntity);
+		}
+
+		// FIXME use streaming
+		@Override
+		public InputStream getContent() throws IOException {
+			final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+	        writeTo(outStream);
+	        outStream.flush();
+	        return new ByteArrayInputStream(outStream.toByteArray());
+		}
+		
 	}
 	
 }

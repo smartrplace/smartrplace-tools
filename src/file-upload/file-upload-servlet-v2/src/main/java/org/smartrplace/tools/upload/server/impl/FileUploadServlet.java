@@ -4,8 +4,10 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,7 +20,9 @@ import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -59,7 +63,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-// TODO 
+// TODO
+// config file/clean up for incremental upload (SlotsDB)
 // config for incremental file uploader (SlotsDb)
 @Component(
 		service=Servlet.class,
@@ -288,6 +293,7 @@ public class FileUploadServlet extends HttpServlet  {
 				});
 			final Path dir = Paths.get(config.uploadFolder(), user, path.substring(1));
 			final AtomicBoolean hasZipPart = new AtomicBoolean(false);
+			final List<Path> zipFiles = new ArrayList<>();
 			parts.stream()
 				.filter(part -> part.getContentType() != null && part.getContentType().startsWith("application/zip"))
 				.forEach(zipPart -> {
@@ -310,6 +316,7 @@ public class FileUploadServlet extends HttpServlet  {
 						    		Files.copy(zis, targetFile, StandardCopyOption.REPLACE_EXISTING);
 							    	return null;
 						    	}, ctx);
+				    			zipFiles.add(targetFile);
 				    		} catch(SecurityException | PrivilegedActionException e) {
 				    			logger.warn("Failed to unzip file", e);
 				    	    	success.set(false);
@@ -325,11 +332,18 @@ public class FileUploadServlet extends HttpServlet  {
 				    }
 				    logger.debug("New files from user {} at {}",user,dir);
 				});
-			if (hasZipPart.get() && config != null) {
+			// FIXME not working yet!
+			if (hasZipPart.get() && configPart != null) {
 				final Path configFile = dir.resolve(config.configFileName());
-		    	if (!Files.exists(configFile)) { // TODO force overwrite option?
-		    		Files.copy(configPart.getInputStream(), configFile);
-		    	}
+				final FileConfiguration cfg;
+	    		try (final Reader reader = new InputStreamReader(configPart.getInputStream(), StandardCharsets.UTF_8)) {
+	    			cfg = jsonReader.readValue(reader);
+	    		}
+	    		for (Path zip: zipFiles) {
+	    			final FileConfiguration existingConfig = getExistingConfig(configFile, zip);
+	    			if (existingConfig == null)
+	    				addConfig(configFile, cfg);
+	    		}
 			}
 		} catch (UncheckedIOException e) {
 	    	resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
