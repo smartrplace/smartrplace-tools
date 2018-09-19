@@ -26,6 +26,7 @@ import org.apache.http.HttpResponse;
 import org.junit.Test;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
+import org.osgi.framework.InvalidSyntaxException;
 import org.smartrplace.tools.upload.api.FileConfiguration;
 import org.smartrplace.tools.upload.utils.DateTimeUtils;
 import org.junit.Assert;
@@ -38,6 +39,12 @@ import org.junit.Assert;
  */
 @ExamReactorStrategy(PerClass.class)
 public class FileUploadTest extends SimpleContextTestBase {
+	
+	@Test
+	@Override
+	public void startupWorks() throws IOException, InvalidSyntaxException, InterruptedException {
+		super.startupWorks();
+	}
 	
 	@Test
 	public void servletWorks() throws URISyntaxException, InterruptedException, ExecutionException, AssertionError, IOException {
@@ -174,5 +181,5 @@ public class FileUploadTest extends SimpleContextTestBase {
 			FileUtils.cleanDirectory(baseFolder.toFile());
 		}
 	}
-
+	
 }

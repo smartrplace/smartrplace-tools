@@ -23,6 +23,8 @@ import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -64,7 +66,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 // TODO
-// config file/clean up for incremental upload (SlotsDB)
 // config for incremental file uploader (SlotsDb)
 @Component(
 		service=Servlet.class,
@@ -80,6 +81,8 @@ public class FileUploadServlet extends HttpServlet  {
 
 	private static final long serialVersionUID = 1L;
 	private static final Logger logger = LoggerFactory.getLogger(FileUploadServlet.class);
+	
+	private final ConcurrentMap<String, UserStats> userStats = new ConcurrentHashMap<>();
 	private final ObjectMapper mapper = new ObjectMapper();
 	private final ObjectReader jsonReader = mapper.readerFor(FileConfiguration.class);
 	private final ObjectReader jsonMapReader = mapper.readerFor(FileConfigurations.class);
@@ -92,6 +95,7 @@ public class FileUploadServlet extends HttpServlet  {
 	private volatile FileUploadConfiguration config;
 	
 	@Activate
+	@Modified
 	protected void activate(BundleContext ctx, FileUploadConfiguration config) {
 		this.config = config;
 		try {
@@ -106,12 +110,7 @@ public class FileUploadServlet extends HttpServlet  {
 			throw new ComponentException(e);
 		}
 	}
-	
-	@Modified
-	protected void modified(FileUploadConfiguration config) {
-		this.config = config;
-	}
-	
+
 	private Void doGetInternal(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		final String user = (String) req.getAttribute(ServletContextHelper.REMOTE_USER);
 		logger.trace("GET request received from user {}", user);
@@ -209,6 +208,7 @@ public class FileUploadServlet extends HttpServlet  {
 		final AccessControlContext ctx = accessControl.getAccessControlContext();
 		if (ctx == null)
 			return;
+		final FileUploadConfiguration config = this.config;
 		String path0 = req.getPathInfo();
 		if (path0 == null)
 			path0 = "/.";
@@ -220,11 +220,12 @@ public class FileUploadServlet extends HttpServlet  {
 			resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Path depth too high. Max: " + config.maxDepth());
 			return;
 		}
+		if (!userStats.computeIfAbsent(user, UserStats::new).accessGranted(config, resp))
+			return;
 		final String path = path0;
 		// TODO replace by standard multi part config
 		final MultipartConfigElement mce = new MultipartConfigElement(tempFolder.toString(), config.maxFileSize(), config.maxRequestSize(), (int) config.fileSizeThreshold());
 		final MultiPartInputStreamParser mpisp = new MultiPartInputStreamParser(req.getInputStream(), req.getContentType(), mce, tempFolder.toFile()); 
-		final FileUploadConfiguration config = this.config;
 		mpisp.getParts();
 		final Part configPart = mpisp.getPart("config"); // fails due to jetty bug if we did not call mpisp.getParts() before // https://github.com/eclipse/jetty.project/issues/2892
 	    final AtomicBoolean success = new AtomicBoolean(true);
@@ -260,6 +261,10 @@ public class FileUploadServlet extends HttpServlet  {
 				    		final FileConfiguration newConfig;
 				    		try (final InputStream in = configPart.getInputStream()) {
 				    			 newConfig = jsonReader.readValue(in);
+				    		}
+				    		if (newConfig == null) {
+				    			resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "File configuration missing");
+				    			return;
 				    		}
 				    		if (!prefixSuffiXMatch(target0, newConfig)) {
 				    			success.set(false);
@@ -332,17 +337,18 @@ public class FileUploadServlet extends HttpServlet  {
 				    }
 				    logger.debug("New files from user {} at {}",user,dir);
 				});
-			// FIXME not working yet!
 			if (hasZipPart.get() && configPart != null) {
 				final Path configFile = dir.resolve(config.configFileName());
 				final FileConfiguration cfg;
 	    		try (final Reader reader = new InputStreamReader(configPart.getInputStream(), StandardCharsets.UTF_8)) {
 	    			cfg = jsonReader.readValue(reader);
 	    		}
-	    		for (Path zip: zipFiles) {
-	    			final FileConfiguration existingConfig = getExistingConfig(configFile, zip);
-	    			if (existingConfig == null)
-	    				addConfig(configFile, cfg);
+	    		if (cfg != null) {
+		    		for (Path zip: zipFiles) {
+		    			final FileConfiguration existingConfig = getExistingConfig(configFile, zip);
+		    			if (existingConfig == null)
+		    				addConfig(configFile, cfg);
+		    		}
 	    		}
 			}
 		} catch (UncheckedIOException e) {

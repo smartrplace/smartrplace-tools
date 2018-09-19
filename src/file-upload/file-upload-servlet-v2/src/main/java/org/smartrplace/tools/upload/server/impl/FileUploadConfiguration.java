@@ -60,6 +60,24 @@ public @interface FileUploadConfiguration {
 	int fileSizeThreshold() default 1024*1024*5;
 	
 	/**
+	 * Maximum number of uploads per user per minute. Default: 4.
+	 * @return
+	 */
+	int maxUploadsPerMinute() default 4;
+	
+	/**
+	 * Maximum number of uploads per user per hour. Default: 10.
+	 * @return
+	 */
+	int maxUploadsPerHour() default 10;
+	
+	/**
+	 * Maximum number of uploads per user per day. Default: 15.
+	 * @return
+	 */
+	int maxUploadsPerDay() default 15;
+	
+	/**
 	 * Each folder with uploaded files contains one config file which stores
 	 * the {@link FileConfiguration} for all files in that folder.<br>
 	 * Note: this property should not be changed after the initial framework start,

@@ -49,6 +49,7 @@ public class AutouploadTest extends SimpleContextTestBase {
 	@Inject
 	private ConfigurationAdmin configAdmin;
 	
+	@Test
 	@Override
 	public void startupWorks() throws IOException, InvalidSyntaxException, InterruptedException {
 		super.startupWorks();

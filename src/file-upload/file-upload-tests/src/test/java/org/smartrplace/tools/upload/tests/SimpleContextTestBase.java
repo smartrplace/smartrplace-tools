@@ -63,7 +63,6 @@ public class SimpleContextTestBase extends TestBase {
 			contextReg2.unregister();
 	}
 	
-	@Test
 	public void startupWorks() throws IOException, InvalidSyntaxException, InterruptedException {
 		checkBundleStarted("org.smartrplace.tools.file-upload-servlet-v2");
 	}
