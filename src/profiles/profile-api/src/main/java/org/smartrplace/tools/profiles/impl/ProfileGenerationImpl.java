@@ -68,6 +68,7 @@ import org.smartrplace.tools.profiles.ProfileTemplate;
 import org.smartrplace.tools.profiles.State;
 import org.smartrplace.tools.profiles.DataPoint.DataType;
 import org.smartrplace.tools.profiles.utils.ProfileImpl;
+import org.smartrplace.tools.profiles.utils.StandardDataPoints;
 
 import de.iwes.widgets.api.widgets.localisation.OgemaLocale;
 
@@ -151,18 +152,28 @@ public class ProfileGenerationImpl implements ProfileGeneration {
 		return id;
 	}
 
-
 	@Override
 	public Profile run(ProfileTemplate template, Consumer<State> switchFunction,
-			NavigableMap<Long, State> stateDurations, Map<DataPoint, Object> data, State endState) throws InterruptedException {
+			NavigableMap<Long, State> stateDurations, Map<DataPoint, Object> data0, State endState) throws InterruptedException {
 		if (stateDurations.firstKey() <= 0)
 			throw new IllegalArgumentException("State end times contain a non-positive value: "+ stateDurations.firstKey());
 		Objects.requireNonNull(switchFunction, "Switch function is null");
-		if (data.entrySet().stream()
+		if (data0.entrySet().stream()
 			.filter(entry -> entry.getValue() == null || entry.getKey() == null)
 			.findAny()
 			.isPresent())
 			throw new NullPointerException("Null data passed");
+		final Optional<DataPoint> startTime = template.contextData().stream()
+			.filter(StandardDataPoints::isStartTime)
+			.findAny();
+		final boolean hasStartTime = startTime.isPresent();
+		final Map<DataPoint, Object> data;
+		if (hasStartTime && !data0.keySet().stream().filter(StandardDataPoints::isStartTime).findAny().isPresent()) {
+			data = new LinkedHashMap<>(data0);
+			data.put(startTime.get(), time());
+		} else {
+			data = data0;
+		}
 		if (stateDurations.entrySet().stream()
 				.filter(entry -> entry.getValue() == null || entry.getKey() == null)
 				.findAny()
@@ -170,7 +181,7 @@ public class ProfileGenerationImpl implements ProfileGeneration {
 				throw new NullPointerException("Null data passed");
 		Optional<DataPoint> missing = template.primaryData().stream()
 			.filter(dp -> !dp.optional())
-			.filter(dp -> !data.containsKey(dp))
+			.filter(dp -> !data0.containsKey(dp))
 			.findAny();
 		if (!missing.isPresent()) {
 			missing = template.contextData().stream()

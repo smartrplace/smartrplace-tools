@@ -4,14 +4,17 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.ogema.core.application.ApplicationManager;
+import org.ogema.core.model.units.TemperatureResource;
 import org.ogema.core.timeseries.InterpolationMode;
 import org.ogema.core.timeseries.ReadOnlyTimeSeries;
+import org.ogema.model.sensors.TemperatureSensor;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.slf4j.LoggerFactory;
 import org.smartrplace.tools.profiles.DataPoint;
@@ -34,6 +37,7 @@ import de.iwes.widgets.html.form.dropdown.DropdownData;
 import de.iwes.widgets.html.form.dropdown.TemplateDropdown;
 import de.iwes.widgets.html.form.label.Header;
 import de.iwes.widgets.html.html5.SimpleGrid;
+import de.iwes.widgets.html.multiselect.TemplateMultiselect;
 import de.iwes.widgets.html.plot.api.PlotType;
 import de.iwes.widgets.reswidget.scheduleplot.api.TimeSeriesPlot;
 import de.iwes.widgets.reswidget.scheduleplot.plotlyjs.SchedulePlotlyjs;
@@ -52,6 +56,7 @@ class OverviewPageInit {
 	private final Download download;
 	private final FileUpload upload;
 	private final Button uploadBtn;
+	private final TemplateMultiselect<DataPoint> scheduleSelector;
 	private final TimeSeriesPlot<?, ?, ?> schedulePlot;
 	
 	@SuppressWarnings("serial")
@@ -65,23 +70,54 @@ class OverviewPageInit {
 		this.alert = new Alert(page, "alert", "");
 		alert.setDefaultVisibility(false);
 		this.profilesSelector = new ProfileDropdown(page, "profileDropdown", service, alert);
-		this.schedulePlot = new SchedulePlotlyjs(page, "schedulePlot", false) {
+		this.scheduleSelector = new TemplateMultiselect<DataPoint>(page, "scheduleSelector") {
 			
 			@Override
 			public void onGET(OgemaHttpRequest req) {
 				final Profile profile = profilesSelector.getSelectedProfile();
 				if (profile == null) {
+					update(Collections.emptyList(), req);
+					return;
+				}
+				// TODO select primary and/or context data, etc
+				Stream<Map.Entry<DataPoint, Object>> stream = profile.getPrimaryData().entrySet().stream();
+				stream = Stream.concat(stream, profile.getContextData().entrySet().stream());
+				final List<DataPoint> points = stream
+						.filter(entry -> entry.getValue() instanceof ReadOnlyTimeSeries)
+						.map(Map.Entry::getKey)
+						.collect(Collectors.toList());
+				update(points, req);
+				selectItems(points, req);
+			}
+			
+		};
+		this.schedulePlot = new SchedulePlotlyjs(page, "schedulePlot", false) {
+			
+			private Class<?> getTypeInfo(final DataPoint dp) {
+				final Class<?> type = dp.typeInfo();
+				if (type == TemperatureSensor.class)
+					return TemperatureResource.class;
+				return type;
+			}
+			
+			
+			@Override
+			public void onGET(OgemaHttpRequest req) {
+				final List<DataPoint> points = scheduleSelector.getSelectedItems(req);
+				final Profile profile = profilesSelector.getSelectedProfile();
+				if (profile == null || points == null || points.isEmpty()) {
 					getScheduleData(req).setSchedules(Collections.emptyMap());
 					return;
 				}
-				// TODO select primary and/or context data
+				// TODO select primary and/or context data, etc
 				Stream<Map.Entry<DataPoint, Object>> stream = profile.getPrimaryData().entrySet().stream();
 				stream = Stream.concat(stream, profile.getContextData().entrySet().stream());
 				final Map<String, SchedulePresentationData> schedules = stream
+					.filter(entry -> points.contains(entry.getKey()))
 					.filter(entry -> entry.getValue() instanceof ReadOnlyTimeSeries)
 					.collect(Collectors.toMap(
 						entry -> entry.getKey().label(req.getLocale()),
-						entry -> new DefaultSchedulePresentationData((ReadOnlyTimeSeries) entry.getValue(), entry.getKey().typeInfo(), 
+						entry -> new DefaultSchedulePresentationData((ReadOnlyTimeSeries) entry.getValue(), getTypeInfo(entry.getKey()), 
 								entry.getKey().label(req.getLocale()), InterpolationMode.LINEAR)
 					));
 				getScheduleData(req).setSchedules(schedules);
@@ -203,7 +239,8 @@ class OverviewPageInit {
 		grid.addItem("Select profile", false, null).addItem(profilesSelector,false, null)
 				.addItem("Delete", true, null).addItem(deleteBtn, false, null)
 				.addItem("Download", true, null).addItem(downloadBtn, false, null)
-				.addItem(upload, true, null).addItem(uploadBtn, false, null);
+				.addItem(upload, true, null).addItem(uploadBtn, false, null)
+				.addItem("Select time series", true, null).addItem(scheduleSelector, false, null);
 		page.append(header).linebreak().append(alert)
 			.append(grid)
 			.append(schedulePlot).linebreak()
@@ -211,10 +248,12 @@ class OverviewPageInit {
 	}
 
 	private final void setDependencies() {
-		profilesSelector.triggerAction(schedulePlot, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		profilesSelector.triggerAction(alert, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		profilesSelector.triggerAction(downloadBtn, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		profilesSelector.triggerAction(deleteBtn, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
+		profilesSelector.triggerAction(scheduleSelector, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
+		profilesSelector.triggerAction(schedulePlot, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST, 1);
+		scheduleSelector.triggerAction(schedulePlot, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		downloadBtn.triggerAction(download, TriggeringAction.POST_REQUEST, DownloadData.GET_AND_STARTDOWNLOAD);
 		uploadBtn.triggerAction(upload, TriggeringAction.POST_REQUEST, TriggeredAction.POST_REQUEST);
 		upload.triggerAction(profilesSelector, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);

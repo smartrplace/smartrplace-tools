@@ -27,6 +27,7 @@ import org.smartrplace.tools.profiles.Profile;
 import org.smartrplace.tools.profiles.ProfileGeneration;
 import org.smartrplace.tools.profiles.ProfileTemplate;
 import org.smartrplace.tools.profiles.State;
+import org.smartrplace.tools.profiles.utils.StandardDataPoints;
 
 class RecordingTask implements Callable<Profile> {
 
@@ -55,6 +56,7 @@ class RecordingTask implements Callable<Profile> {
 				missing = template.contextData().stream()
 					.filter(dp -> !dp.optional())
 					.filter(dp -> !input.containsKey(dp))
+					.filter(dp -> !StandardDataPoints.isStartTime(dp))
 					.findAny();
 			}
 			if (missing.isPresent())

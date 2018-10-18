@@ -46,6 +46,7 @@ public class HeaterProfileTemplate implements ProfileTemplate {
 	@Override
 	public List<DataPoint> contextData() {
 		return Arrays.asList(
+				StandardDataPoints.profileStartTime(false),
 				StandardDataPoints.outsideTemperature(false), 
 				StandardDataPoints.outsideHumidity(false),
 				StandardDataPoints.powerConsumption(false),

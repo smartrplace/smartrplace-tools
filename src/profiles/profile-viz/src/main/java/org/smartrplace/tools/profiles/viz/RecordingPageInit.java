@@ -1,6 +1,8 @@
 package org.smartrplace.tools.profiles.viz;
 
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,6 +31,7 @@ import org.smartrplace.tools.profiles.Profile;
 import org.smartrplace.tools.profiles.ProfileGeneration;
 import org.smartrplace.tools.profiles.ProfileTemplate;
 import org.smartrplace.tools.profiles.State;
+import org.smartrplace.tools.profiles.utils.StandardDataPoints;
 import org.smartrplace.tools.profiles.utils.StateImpl;
 
 import de.iwes.widgets.api.extended.WidgetData;
@@ -166,7 +169,7 @@ class RecordingPageInit {
 		endStateSelector.setDefaultAddEmptyOption(true);
 		endStateSelector.selectDefaultItem(null);
 		this.primaryPointsGrid = new DataGrid(page, "primaryPointsGrid", true, appMan);
-		this.contextPointsGrid = new DataGrid(page, "contextPointsGrid", false, appMan);
+		this.contextPointsGrid = new DataGrid(page, "contextPointsGrid", false, appMan, Arrays.asList(StandardDataPoints.profileStartTime(true).id()));
 		final RowTemplate<State> durationsTemplate = new RowTemplate<State>() {
 			
 			private final Map<String, Object> header;
@@ -407,12 +410,19 @@ class RecordingPageInit {
 	private final class DataGrid extends TemplateGrid<DataPoint> {
 		
 		private final boolean primary;
+		private final Collection<String> filteredIds;
 		
 		public DataGrid(WidgetPage<?> page, String id, boolean primary, ApplicationManager appMan) {
+			this(page, id, primary, appMan, null);
+		}
+		
+		public DataGrid(WidgetPage<?> page, String id, boolean primary, ApplicationManager appMan, Collection<String> filteredIds) {
 			super(page, id, false, new DataTemplate(primary, appMan));
 			this.primary = primary;
 			RecordingPageInit.setGridStyle(this);
+			this.filteredIds = filteredIds == null || filteredIds.isEmpty() ? null : new ArrayList<>(filteredIds);
 		}
+
 
 		public void onGET(OgemaHttpRequest req) {
 			final ComponentServiceObjects<ProfileTemplate> service = templateSelector.getSelectedItem(req);
@@ -422,7 +432,12 @@ class RecordingPageInit {
 			}
 			final ProfileTemplate profile = service.getService();
 			try {
-				update(primary ? profile.primaryData() : profile.contextData(), req);
+				List<DataPoint> points = primary ? profile.primaryData() : profile.contextData();
+				if (filteredIds != null) {
+					points = new ArrayList<>(points);
+					points.removeIf(dp -> filteredIds.contains(dp.id()));
+				}
+				update(points, req);
 			} finally {
 				service.ungetService(profile);
 			}
