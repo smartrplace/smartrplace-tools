@@ -102,9 +102,11 @@ public class ProfileGenerationImpl implements ProfileGeneration {
 	
 	@Reference(
 			service=FrameworkClock.class,
-			cardinality=ReferenceCardinality.OPTIONAL
+			cardinality=ReferenceCardinality.OPTIONAL,
+			policy=ReferencePolicy.DYNAMIC,
+			policyOption=ReferencePolicyOption.GREEDY
 	)
-	private ComponentServiceObjects<FrameworkClock> clock;
+	private volatile ComponentServiceObjects<FrameworkClock> clock;
 	
 	@Reference(
 			service=ProfileTemplate.class,
@@ -407,11 +409,15 @@ public class ProfileGenerationImpl implements ProfileGeneration {
 		final ComponentServiceObjects<FrameworkClock> service = this.clock;
 		if (service == null)
 			return System.currentTimeMillis();
-		final FrameworkClock clock = service.getService();
+		FrameworkClock clock = null;
 		try {
+			clock = service.getService();
 			return clock.getExecutionTime();
+		} catch (IllegalArgumentException e) {
+			return System.currentTimeMillis();
 		} finally {
-			service.ungetService(clock);
+			if (clock != null)
+				service.ungetService(clock);
 		}
 	}
 	
@@ -419,11 +425,15 @@ public class ProfileGenerationImpl implements ProfileGeneration {
 		final ComponentServiceObjects<FrameworkClock> service = this.clock;
 		if (service == null)
 			return 1;
-		final FrameworkClock clock = service.getService();
+		FrameworkClock clock = null;
 		try {
+			clock = service.getService();
 			return clock.getSimulationFactor();
+		} catch (IllegalArgumentException e) {
+			return 1;
 		} finally {
-			service.ungetService(clock);
+			if (clock != null)
+				service.ungetService(clock);
 		}
 	}
 
