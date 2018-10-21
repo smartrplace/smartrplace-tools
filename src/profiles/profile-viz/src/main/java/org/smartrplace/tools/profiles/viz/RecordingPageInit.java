@@ -701,7 +701,7 @@ class RecordingPageInit {
 			final EnumDropdown<ChronoUnit> ud = (EnumDropdown<ChronoUnit>) cells.get("unit");
 			final int dur = sd.getDuration();
 			final ChronoUnit unit = sd.getUnit();
-			((ValueInputField<Integer>) d).setNumericalValue(dur, req);
+			((ValueInputField<Long>) d).setNumericalValue((long) dur, req);
 			ud.selectItem(unit, req);
 		}
 	}
