@@ -1,6 +1,7 @@
 package org.smartrplace.tools.profiles.prefs.impl;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,6 +30,7 @@ import org.smartrplace.tools.profiles.ProfileTemplate;
 import org.smartrplace.tools.profiles.State;
 import org.smartrplace.tools.profiles.prefs.ProfileData;
 import org.smartrplace.tools.profiles.prefs.ProfilePreferences;
+import org.smartrplace.tools.profiles.prefs.StateDuration;
 import org.smartrplace.tools.profiles.prefs.model.DataPointConfig;
 import org.smartrplace.tools.profiles.prefs.model.ProfileConfiguration;
 
@@ -62,10 +64,22 @@ public class ProfilePreferencesImpl implements ProfilePreferences, Application {
 	
 	@Override
 	public Future<?> storeProfileConfiguration(ProfileTemplate template, String id, 
-				Map<DataPoint, Resource> resourceSettings, State endState, OnOffSwitch onOffSwitch) {
+				Map<DataPoint, Resource> resourceSettings, List<StateDuration> durations, State endState, OnOffSwitch onOffSwitch) {
 		Objects.requireNonNull(id);
 		Objects.requireNonNull(template);
 		Objects.requireNonNull(resourceSettings);
+		if (durations != null) {
+			if (durations.size() != template.states().size())
+				throw new IllegalArgumentException("Size of durations list does not match template states size");
+			final Iterator<StateDuration> durIt = durations.iterator();
+			final Iterator<State> statesIt = template.states().iterator();
+			while (durIt.hasNext()) {
+				final StateDuration dur = durIt.next();
+				final State state = statesIt.next();
+				if (dur.getState() != state)
+					throw new IllegalArgumentException("Invalid state order in durations list");
+			}
+		}
 		return appManFuture.thenAcceptAsync(appMan -> {
 			@SuppressWarnings("unchecked")
 			final ResourceList<ProfileConfiguration> list = 
@@ -91,6 +105,8 @@ public class ProfilePreferencesImpl implements ProfilePreferences, Application {
 				trans.setAsReference(cfg.onOffSwitch(), onOffSwitch);
 			if (endState != null)
 				trans.setString(cfg.endState(), endState.id());
+			if (durations != null)
+				StateDuration.serialize(durations, cfg.durations(), trans);
 			trans.activate(cfg, false, true);
 			trans.commit();
 		});
@@ -115,8 +131,24 @@ public class ProfilePreferencesImpl implements ProfilePreferences, Application {
 				.filter(dpc -> dpc.target().isReference(false))
 				.collect(Collectors.toMap(dpc -> getDataPoint(template, dpc), DataPointConfig::target));
 			final OnOffSwitch oo = cfg.onOffSwitch().isActive() ? cfg.onOffSwitch() : null;
-			final String endState = cfg.endState().isActive() ? cfg.endState().getValue() : null;
-			return new ProfileData(map, oo, endState);
+			final String endStateId = cfg.endState().isActive() ? cfg.endState().getValue() : null;
+			final State endState = endStateId == null ? null : template.states().stream()
+				.filter(st -> endStateId.equals(st.id()))
+				.findAny().orElse(null);
+			final List<org.smartrplace.tools.profiles.prefs.model.StateDuration> durs = cfg.durations().getAllElements();
+			final List<StateDuration> durObjects;
+			if (durs.size() == template.states().size()) {
+				final List<StateDuration> list0 = durs.stream()
+					.map(d -> StateDuration.deserialize(d, template))
+					.collect(Collectors.toList());
+				if (list0.stream().filter(Objects::isNull).findAny().isPresent())
+					durObjects = null;
+				else
+					durObjects = list0;
+			} else {
+				durObjects = null;
+			}
+			return new ProfileData(map, oo, endState, durObjects);
 		});
 	}
 	

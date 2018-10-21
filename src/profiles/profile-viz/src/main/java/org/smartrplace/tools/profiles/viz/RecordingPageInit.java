@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import org.smartrplace.tools.profiles.ProfileTemplate;
 import org.smartrplace.tools.profiles.State;
 import org.smartrplace.tools.profiles.prefs.ProfileData;
 import org.smartrplace.tools.profiles.prefs.ProfilePreferences;
+import org.smartrplace.tools.profiles.prefs.StateDuration;
 import org.smartrplace.tools.profiles.utils.StandardDataPoints;
 import org.smartrplace.tools.profiles.utils.StateImpl;
 
@@ -170,11 +172,12 @@ class RecordingPageInit {
 						final OnOffSwitch oo = pd.getOnOffSwitch();
 						if (oo != null)
 							switchSelector.selectItem(oo.getLocationResource(), req);
-						final String endStateID = pd.getEndStateId();
-						final State state = endStateID == null ? null : template.states().stream()
-								.filter(st -> endStateID.equals(st.id()))
-								.findAny().orElse(null);
-						endStateSelector.selectItem(state, req);
+						final State endState = pd.getEndState();
+						if (endState != null)
+							endStateSelector.selectItem(endState, req);
+						final List<StateDuration> durations = pd.getDurations();
+						if (durations != null)
+							setDurations(RecordingPageInit.this.durations, durations, req);
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
 						return;
@@ -221,7 +224,8 @@ class RecordingPageInit {
 					final State endState = endStateSelector.getSelectedItem(req);
 					final ProfilePreferences prefs = preferences.getService();
 					try {
-						prefs.storeProfileConfiguration(template, id, resourceSettings, endState, swtch);
+						prefs.storeProfileConfiguration(template, id, resourceSettings, 
+								getDurationObjects(durations, template.states(), req), endState, swtch);
 						alert.showAlert("Configuration stored: " + id, true, req);
 					} finally {
 						preferences.ungetService(prefs);
@@ -307,9 +311,11 @@ class RecordingPageInit {
 				final ValueInputField<Long> duration = new ValueInputField<>(durations, "durartion_" + id, Long.class, req);
 				duration.setDefaultNumericalValue(5L);
 				duration.setDefaultLowerBound(0);
+				preferencesSelector.triggerAction(duration, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST, req);
 				row.addCell("duration", duration);
 				final EnumDropdown<ChronoUnit> unit = new EnumDropdown<>(durations, "unit_" + id, req, ChronoUnit.class);
 				unit.selectDefaultItem(ChronoUnit.MINUTES);
+				preferencesSelector.triggerAction(unit, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST, req);
 				row.addCell("unit", unit);
 				return row;
 			}
@@ -469,6 +475,7 @@ class RecordingPageInit {
 		
 		primaryPointsGrid.triggerAction(preferencesSelector, TriggeringAction.GET_REQUEST, TriggeredAction.GET_REQUEST);
 		contextPointsGrid.triggerAction(preferencesSelector, TriggeringAction.GET_REQUEST, TriggeredAction.GET_REQUEST);
+		durations.triggerAction(preferencesSelector, TriggeringAction.GET_REQUEST, TriggeredAction.GET_REQUEST);
 
 	}
 	
@@ -654,6 +661,49 @@ class RecordingPageInit {
 			durations.put(opt.get(), millis);
 		}
 		return durations;
+	}
+	
+	private static List<StateDuration> getDurationObjects(final TemplateGrid<State> grid, final Collection<State> states, final OgemaHttpRequest req) {
+		final Collection<Row> rows = grid.getRows(req);
+		final List<StateDuration> durations = new ArrayList<>(rows.size());
+		final Iterator<Row> rowIt = rows.iterator();
+		final Iterator<State> statesIt = states.iterator();
+		while (rowIt.hasNext()) {
+			final Row row = rowIt.next();
+			final Object d = row.cells.get("duration");
+			if (!(d instanceof ValueInputField<?>))
+				continue;
+			if (!statesIt.hasNext())
+				break;
+			final State state =statesIt.next();
+			final Long dur = ((ValueInputField<Long>) d).getNumericalValue(req);
+			if (dur == null)
+				continue;
+			final ChronoUnit unit = ((EnumDropdown<ChronoUnit>) row.cells.get("unit")).getSelectedItem(req);
+			durations.add(new StateDuration(state, dur.intValue(), unit));
+		}
+		return durations;
+	}
+	
+	private static void setDurations(final TemplateGrid<State> grid, final List<StateDuration> durations, final OgemaHttpRequest req) {
+		final Collection<Row> rows = grid.getRows(req);
+		final Iterator<Row> rowIt = rows.iterator();
+		final Iterator<StateDuration> durIt = durations.iterator();
+		while (rowIt.hasNext()) {
+			final Row row = rowIt.next();
+			final Map<String, Object> cells = row.cells;
+			final Object d = cells.get("duration");
+			if (!(d instanceof ValueInputField<?>))
+				continue;
+			if (!durIt.hasNext())
+				break;
+			final StateDuration sd = durIt.next(); // TODO check for correct label
+			final EnumDropdown<ChronoUnit> ud = (EnumDropdown<ChronoUnit>) cells.get("unit");
+			final int dur = sd.getDuration();
+			final ChronoUnit unit = sd.getUnit();
+			((ValueInputField<Integer>) d).setNumericalValue(dur, req);
+			ud.selectItem(unit, req);
+		}
 	}
 	
 	@SuppressWarnings("serial")

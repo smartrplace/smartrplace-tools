@@ -26,4 +26,11 @@ public interface ProfileConfiguration extends Configuration {
 	
 	StringResource endState();
 	
+	/**
+	 * Order of durations must correspond to the order of states in
+	 * {@link ProfileTemplate#states()}.
+	 * @return
+	 */
+	ResourceList<StateDuration> durations();
+	
 }
