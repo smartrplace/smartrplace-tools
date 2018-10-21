@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -31,10 +32,12 @@ import org.smartrplace.tools.profiles.Profile;
 import org.smartrplace.tools.profiles.ProfileGeneration;
 import org.smartrplace.tools.profiles.ProfileTemplate;
 import org.smartrplace.tools.profiles.State;
+import org.smartrplace.tools.profiles.prefs.ProfilePreferences;
 import org.smartrplace.tools.profiles.utils.StandardDataPoints;
 import org.smartrplace.tools.profiles.utils.StateImpl;
 
 import de.iwes.widgets.api.extended.WidgetData;
+import de.iwes.widgets.api.widgets.OgemaWidget;
 import de.iwes.widgets.api.widgets.WidgetPage;
 import de.iwes.widgets.api.widgets.dynamics.TriggeredAction;
 import de.iwes.widgets.api.widgets.dynamics.TriggeringAction;
@@ -49,6 +52,7 @@ import de.iwes.widgets.html.form.button.Button;
 import de.iwes.widgets.html.form.dropdown.EnumDropdown;
 import de.iwes.widgets.html.form.dropdown.TemplateDropdown;
 import de.iwes.widgets.html.form.label.Header;
+import de.iwes.widgets.html.form.textfield.TextField;
 import de.iwes.widgets.html.form.textfield.ValueInputField;
 import de.iwes.widgets.html.html5.AbstractGrid;
 import de.iwes.widgets.html.html5.SimpleGrid;
@@ -63,6 +67,9 @@ class RecordingPageInit {
 	private final Header header;
 	private final TaskAlert alert;
 	private final TemplateDropdown<ComponentServiceObjects<ProfileTemplate>> templateSelector;
+	private final TemplateDropdown<String> preferencesSelector;
+	private final TextField storeConfigAsPreferenceId;
+	private final Button storeConfigAsPreference;
 	private final TemplateDropdown<State> endStateSelector;
 	private final TemplateDropdown<Resource> switchSelector;
 	private final Header primaryHeader;
@@ -76,7 +83,9 @@ class RecordingPageInit {
 	
 	@SuppressWarnings("serial")
 	public RecordingPageInit(final WidgetPage<?> page, final ApplicationManager appMan, 
-			final ComponentServiceObjects<ProfileGeneration> generator, final ConcurrentMap<String, ComponentServiceObjects<ProfileTemplate>> templates) {
+			final ComponentServiceObjects<ProfileGeneration> generator, 
+			final ConcurrentMap<String, ComponentServiceObjects<ProfileTemplate>> templates, 
+			final ComponentServiceObjects<ProfilePreferences> preferences) {
 		this.page = page;
 		page.setTitle("Profile recording");
 		this.header = new Header(page, "header", "Profile generation");
@@ -108,14 +117,109 @@ class RecordingPageInit {
 			
 			@Override
 			public String getLabel(ComponentServiceObjects<ProfileTemplate> service, OgemaLocale locale) {
-				return propertyOrValue(ProfileTemplate.ID_PROPERTY, template -> template.label(locale), service);
+				return propertyOrValue(ProfileTemplate.LABEL_PROPERTY, template -> template.label(locale), service);
 			}
 			
 			@Override
 			public String getId(ComponentServiceObjects<ProfileTemplate> service) {
-				return propertyOrValue(ProfileTemplate.LABEL_PROPERTY, LabelledItem::id, service);
+				return propertyOrValue(ProfileTemplate.ID_PROPERTY, LabelledItem::id, service);
 			}
 		});
+		this.preferencesSelector = new TemplateDropdown<String>(page, "preferencesSelector") {
+			
+			public void onGET(OgemaHttpRequest req) {
+				final ComponentServiceObjects<ProfileTemplate> template = templateSelector.getSelectedItem(req);
+				if (template == null) {
+					update(Collections.emptyList(), req);
+					return;
+				}
+				final String templateId = propertyOrValue(ProfileTemplate.ID_PROPERTY, LabelledItem::id, template);
+				final ProfilePreferences prefs = preferences.getService();
+				try {
+					final Future<Collection<String>> future = prefs.getProfileIds(templateId);
+					final Collection<String> result = future.get(10, TimeUnit.SECONDS);
+					update(result, req);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return;
+				} catch (Exception e) {
+					update(Collections.emptyList(), req);
+					appMan.getLogger().error("Failed to update preference selector",e);
+				} finally {
+					preferences.ungetService(prefs);
+				}
+			}
+			
+			public void onPOSTComplete(String id, OgemaHttpRequest req) {
+				final String selected = getSelectedItem(req);
+				if (selected == null)
+					return;
+				final ComponentServiceObjects<ProfileTemplate> service = templateSelector.getSelectedItem(req);
+				if (service == null) 
+					return;
+				final ProfileTemplate template = service.getService();
+				try {
+					final ProfilePreferences prefs = preferences.getService();
+					try {
+						final Future<Map<DataPoint, Resource>> future = prefs.loadProfileConfiguration(template, selected);
+						final Map<DataPoint, Resource> data = future.get(30, TimeUnit.SECONDS);
+						selectData(data, primaryPointsGrid, req);
+						selectData(data, contextPointsGrid, req);
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						return;
+					} catch (Exception e) {
+						alert.showAlert("Failed to load configuration: " + e, false, req);
+						appMan.getLogger().warn("Error",e);
+					} finally {
+						preferences.ungetService(prefs);
+					}
+				} finally {
+					service.ungetService(template);
+				}
+			}
+			
+		};
+		preferencesSelector.setDefaultAddEmptyOption(true);
+		preferencesSelector.selectDefaultItem(null);
+		this.storeConfigAsPreferenceId = new TextField(page, "storeConfigAsPreferenceId");
+		this.storeConfigAsPreference = new Button(page, "storeConfigAsPref", "Store configuration") {
+			
+			public void onGET(OgemaHttpRequest req) {
+				final String id = storeConfigAsPreferenceId.getValue(req);
+				if (id == null || id.trim().isEmpty())
+					disable(req);
+				else 
+					enable(req);
+			}
+			
+			public void onPOSTComplete(String data, OgemaHttpRequest req) {
+				final String id = storeConfigAsPreferenceId.getValue(req);
+				if (id == null || id.trim().isEmpty()) {
+					alert.showAlert("Please enter a configuration id", false, req);
+					return;
+				}
+				final ComponentServiceObjects<ProfileTemplate> service = templateSelector.getSelectedItem(req);
+				if (service == null) 
+					return;
+				final ProfileTemplate template = service.getService();
+				try {
+					final Map<DataPoint, Resource> resourceSettings = new HashMap<>();
+					getInputData(resourceSettings, contextPointsGrid, template.contextData(), req);
+					getInputData(resourceSettings, primaryPointsGrid, template.primaryData(), req);
+					final ProfilePreferences prefs = preferences.getService();
+					try {
+						prefs.storeProfileConfiguration(template, id, resourceSettings);
+						alert.showAlert("Configuration stored: " + id, true, req);
+					} finally {
+						preferences.ungetService(prefs);
+					}
+				} finally {
+					service.ungetService(template);
+				}
+			}
+			
+		};
 		this.switchSelector = new ResourceDropdown<Resource>(page, "switchSelector") {
 			
 			public void onGET(OgemaHttpRequest req) {
@@ -168,8 +272,9 @@ class RecordingPageInit {
 		};
 		endStateSelector.setDefaultAddEmptyOption(true);
 		endStateSelector.selectDefaultItem(null);
-		this.primaryPointsGrid = new DataGrid(page, "primaryPointsGrid", true, appMan);
-		this.contextPointsGrid = new DataGrid(page, "contextPointsGrid", false, appMan, Arrays.asList(StandardDataPoints.profileStartTime(true).id()));
+		this.primaryPointsGrid = new DataGrid(page, "primaryPointsGrid", true, appMan, preferencesSelector);
+		this.contextPointsGrid = new DataGrid(page, "contextPointsGrid", false, appMan, preferencesSelector, 
+					Arrays.asList(StandardDataPoints.profileStartTime(true).id()));
 		final RowTemplate<State> durationsTemplate = new RowTemplate<State>() {
 			
 			private final Map<String, Object> header;
@@ -311,7 +416,10 @@ class RecordingPageInit {
 		setGridStyle(selectorGrid);
 		selectorGrid.addItem("Start recording", false, null).addItem(start, false, null)
 			.addItem("Cancel recording", true, null).addItem(cancel, false, null)
-			.addItem("Select template", true, null).addItem(templateSelector, false, null);
+			.addItem("Select template", true, null).addItem(templateSelector, false, null)
+			.addItem("Load configuration", true, null).addItem(preferencesSelector, false, null)
+			.addItem("Store configuration", true, null).addItem(storeConfigAsPreferenceId, false, null)
+			.addItem("", true, null).addItem(storeConfigAsPreference, false, null); // TODO in row above
 		final SimpleGrid switchGrid = new SimpleGrid(page, "switchGRid", true);
 		setGridStyle(switchGrid);
 		switchGrid.addItem("Select end state", false, null).addItem(endStateSelector, false, null)
@@ -332,6 +440,10 @@ class RecordingPageInit {
 		templateSelector.triggerAction(contextPointsGrid, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		templateSelector.triggerAction(durations, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		templateSelector.triggerAction(endStateSelector, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
+		templateSelector.triggerAction(preferencesSelector, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
+		storeConfigAsPreferenceId.triggerAction(storeConfigAsPreference, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
+		storeConfigAsPreference.triggerAction(preferencesSelector, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
+		storeConfigAsPreference.triggerAction(alert, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		
 		start.triggerAction(alert, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		cancel.triggerAction(alert, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
@@ -339,17 +451,23 @@ class RecordingPageInit {
 		start.triggerAction(cancel, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		cancel.triggerAction(start, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		cancel.triggerAction(cancel, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
+		
+		primaryPointsGrid.triggerAction(preferencesSelector, TriggeringAction.GET_REQUEST, TriggeredAction.GET_REQUEST);
+		contextPointsGrid.triggerAction(preferencesSelector, TriggeringAction.GET_REQUEST, TriggeredAction.GET_REQUEST);
+
 	}
 	
 	private final class DataTemplate extends RowTemplate<DataPoint> {
 		
 		private final boolean primary;
 		private final ApplicationManager appMan;
+		private final OgemaWidget preferenceSelector;
 		private final Map<String, Object> header;
 		
-		public DataTemplate(boolean primary, ApplicationManager appMan) {
+		public DataTemplate(boolean primary, ApplicationManager appMan, OgemaWidget preferenceSelector) {
 			this.primary = primary;
 			this.appMan = appMan;
+			this.preferenceSelector = preferenceSelector;
 		}
 		
 		{
@@ -390,6 +508,7 @@ class RecordingPageInit {
 				
 			};
 			resourceDrop.setDefaultAddEmptyOption(true);
+			preferenceSelector.triggerAction(resourceDrop, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST, req);
 			row.addCell("select", resourceDrop);
 			return row;
 		}
@@ -412,12 +531,12 @@ class RecordingPageInit {
 		private final boolean primary;
 		private final Collection<String> filteredIds;
 		
-		public DataGrid(WidgetPage<?> page, String id, boolean primary, ApplicationManager appMan) {
-			this(page, id, primary, appMan, null);
+		public DataGrid(WidgetPage<?> page, String id, boolean primary, ApplicationManager appMan, OgemaWidget preferenceSelector) {
+			this(page, id, primary, appMan, preferenceSelector, null);
 		}
 		
-		public DataGrid(WidgetPage<?> page, String id, boolean primary, ApplicationManager appMan, Collection<String> filteredIds) {
-			super(page, id, false, new DataTemplate(primary, appMan));
+		public DataGrid(WidgetPage<?> page, String id, boolean primary, ApplicationManager appMan, OgemaWidget preferenceSelector, Collection<String> filteredIds) {
+			super(page, id, false, new DataTemplate(primary, appMan, preferenceSelector));
 			this.primary = primary;
 			RecordingPageInit.setGridStyle(this);
 			this.filteredIds = filteredIds == null || filteredIds.isEmpty() ? null : new ArrayList<>(filteredIds);
@@ -476,6 +595,25 @@ class RecordingPageInit {
 				final Resource res = ((TemplateDropdown<Resource>) r).getSelectedItem(req);
 				if (res != null)
 					input.put(opt.get(), res);
+		}
+	}
+	
+	private static void selectData(final Map<DataPoint, Resource> input, final TemplateGrid<DataPoint> grid, 
+			final OgemaHttpRequest req) {
+		final Collection<Row> rows = grid.getRows(req);
+		for (Row row: rows) {
+			final Map<String,Object> cols = row.cells;
+			final String dpLabel = (String) cols.get("dp");
+			final Resource value = input.entrySet().stream()
+				.filter(entry -> dpLabel.equals(entry.getKey().label(req.getLocale())))
+				.map(Map.Entry::getValue)
+				.findAny().orElse(null);
+			if (value == null)
+				continue;
+			final Object r = cols.get("select");
+			if (!(r instanceof TemplateDropdown<?>))
+				continue;
+			((TemplateDropdown<Resource>) r).selectItem(value.getLocationResource(), req);
 		}
 	}
 	

@@ -14,6 +14,7 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.slf4j.LoggerFactory;
 import org.smartrplace.tools.profiles.ProfileGeneration;
 import org.smartrplace.tools.profiles.ProfileTemplate;
+import org.smartrplace.tools.profiles.prefs.ProfilePreferences;
 
 import de.iwes.widgets.api.widgets.LazyWidgetPage;
 import de.iwes.widgets.api.widgets.WidgetPage;
@@ -33,6 +34,9 @@ public class ProfilesRecording implements LazyWidgetPage {
 	
 	@Reference(service=ProfileGeneration.class)
 	private ComponentServiceObjects<ProfileGeneration> generation;
+	
+	@Reference(service=ProfilePreferences.class)
+	private ComponentServiceObjects<ProfilePreferences> preferences;
 
 	@Reference(
 			service=ProfileTemplate.class,
@@ -82,7 +86,7 @@ public class ProfilesRecording implements LazyWidgetPage {
 	
 	@Override
 	public void init(ApplicationManager appMan, WidgetPage<?> page) {
-		new RecordingPageInit(page, appMan, generation, templates);
+		new RecordingPageInit(page, appMan, generation, templates, preferences);
 	}
 
 }
