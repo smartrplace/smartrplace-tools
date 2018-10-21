@@ -17,6 +17,7 @@ import org.ogema.core.model.Resource;
 import org.ogema.core.model.ResourceList;
 import org.ogema.core.model.simple.StringResource;
 import org.ogema.core.resourcemanager.transaction.ResourceTransaction;
+import org.ogema.model.actors.OnOffSwitch;
 import org.ogema.tools.resource.util.ResourceUtils;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -25,6 +26,8 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.smartrplace.tools.profiles.DataPoint;
 import org.smartrplace.tools.profiles.ProfileTemplate;
+import org.smartrplace.tools.profiles.State;
+import org.smartrplace.tools.profiles.prefs.ProfileData;
 import org.smartrplace.tools.profiles.prefs.ProfilePreferences;
 import org.smartrplace.tools.profiles.prefs.model.DataPointConfig;
 import org.smartrplace.tools.profiles.prefs.model.ProfileConfiguration;
@@ -58,7 +61,8 @@ public class ProfilePreferencesImpl implements ProfilePreferences, Application {
 	@Override public void stop(AppStopReason reason) {}
 	
 	@Override
-	public Future<?> storeProfileConfiguration(ProfileTemplate template, String id, Map<DataPoint, Resource> resourceSettings) {
+	public Future<?> storeProfileConfiguration(ProfileTemplate template, String id, 
+				Map<DataPoint, Resource> resourceSettings, State endState, OnOffSwitch onOffSwitch) {
 		Objects.requireNonNull(id);
 		Objects.requireNonNull(template);
 		Objects.requireNonNull(resourceSettings);
@@ -83,13 +87,17 @@ public class ProfilePreferencesImpl implements ProfilePreferences, Application {
 				trans.setString(dp.dataPointId(), dataPoint.id());
 				trans.setAsReference(dp.target(), resource);
 			});
+			if (onOffSwitch != null)
+				trans.setAsReference(cfg.onOffSwitch(), onOffSwitch);
+			if (endState != null)
+				trans.setString(cfg.endState(), endState.id());
 			trans.activate(cfg, false, true);
 			trans.commit();
 		});
 	}
 	
 	@Override
-	public Future<Map<DataPoint, Resource>> loadProfileConfiguration(ProfileTemplate template, String id) {
+	public Future<ProfileData> loadProfileConfiguration(ProfileTemplate template, String id) {
 		Objects.requireNonNull(id);
 		Objects.requireNonNull(template);
 		return appManFuture.thenApplyAsync(appMan -> {
@@ -102,10 +110,13 @@ public class ProfilePreferencesImpl implements ProfilePreferences, Application {
 			final ProfileConfiguration cfg = opt.get();
 			final Stream<DataPoint> dps = Stream.concat(template.primaryData().stream(), template.contextData().stream());
 			final List<String> dpIds = dps.map(DataPoint::id).collect(Collectors.toList());
-			return cfg.dataPoints().getAllElements().stream()
+			final Map<DataPoint, Resource> map = cfg.dataPoints().getAllElements().stream()
 				.filter(dpc -> dpIds.contains(dpc.dataPointId().getValue()))
 				.filter(dpc -> dpc.target().isReference(false))
 				.collect(Collectors.toMap(dpc -> getDataPoint(template, dpc), DataPointConfig::target));
+			final OnOffSwitch oo = cfg.onOffSwitch().isActive() ? cfg.onOffSwitch() : null;
+			final String endState = cfg.endState().isActive() ? cfg.endState().getValue() : null;
+			return new ProfileData(map, oo, endState);
 		});
 	}
 	

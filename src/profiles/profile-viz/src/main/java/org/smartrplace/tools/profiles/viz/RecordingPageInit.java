@@ -32,6 +32,7 @@ import org.smartrplace.tools.profiles.Profile;
 import org.smartrplace.tools.profiles.ProfileGeneration;
 import org.smartrplace.tools.profiles.ProfileTemplate;
 import org.smartrplace.tools.profiles.State;
+import org.smartrplace.tools.profiles.prefs.ProfileData;
 import org.smartrplace.tools.profiles.prefs.ProfilePreferences;
 import org.smartrplace.tools.profiles.utils.StandardDataPoints;
 import org.smartrplace.tools.profiles.utils.StateImpl;
@@ -161,10 +162,19 @@ class RecordingPageInit {
 				try {
 					final ProfilePreferences prefs = preferences.getService();
 					try {
-						final Future<Map<DataPoint, Resource>> future = prefs.loadProfileConfiguration(template, selected);
-						final Map<DataPoint, Resource> data = future.get(30, TimeUnit.SECONDS);
+						final Future<ProfileData> future = prefs.loadProfileConfiguration(template, selected);
+						final ProfileData pd = future.get(30, TimeUnit.SECONDS);
+						final Map<DataPoint, Resource> data = pd.getDataPoints();
 						selectData(data, primaryPointsGrid, req);
 						selectData(data, contextPointsGrid, req);
+						final OnOffSwitch oo = pd.getOnOffSwitch();
+						if (oo != null)
+							switchSelector.selectItem(oo.getLocationResource(), req);
+						final String endStateID = pd.getEndStateId();
+						final State state = endStateID == null ? null : template.states().stream()
+								.filter(st -> endStateID.equals(st.id()))
+								.findAny().orElse(null);
+						endStateSelector.selectItem(state, req);
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
 						return;
@@ -207,9 +217,11 @@ class RecordingPageInit {
 					final Map<DataPoint, Resource> resourceSettings = new HashMap<>();
 					getInputData(resourceSettings, contextPointsGrid, template.contextData(), req);
 					getInputData(resourceSettings, primaryPointsGrid, template.primaryData(), req);
+					final OnOffSwitch swtch = (OnOffSwitch) switchSelector.getSelectedItem(req);
+					final State endState = endStateSelector.getSelectedItem(req);
 					final ProfilePreferences prefs = preferences.getService();
 					try {
-						prefs.storeProfileConfiguration(template, id, resourceSettings);
+						prefs.storeProfileConfiguration(template, id, resourceSettings, endState, swtch);
 						alert.showAlert("Configuration stored: " + id, true, req);
 					} finally {
 						preferences.ungetService(prefs);
@@ -451,6 +463,9 @@ class RecordingPageInit {
 		start.triggerAction(cancel, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		cancel.triggerAction(start, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		cancel.triggerAction(cancel, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
+		
+		preferencesSelector.triggerAction(switchSelector, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
+		preferencesSelector.triggerAction(endStateSelector, TriggeringAction.POST_REQUEST, TriggeredAction.GET_REQUEST);
 		
 		primaryPointsGrid.triggerAction(preferencesSelector, TriggeringAction.GET_REQUEST, TriggeredAction.GET_REQUEST);
 		contextPointsGrid.triggerAction(preferencesSelector, TriggeringAction.GET_REQUEST, TriggeredAction.GET_REQUEST);

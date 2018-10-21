@@ -5,8 +5,10 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 import org.ogema.core.model.Resource;
+import org.ogema.model.actors.OnOffSwitch;
 import org.smartrplace.tools.profiles.DataPoint;
 import org.smartrplace.tools.profiles.ProfileTemplate;
+import org.smartrplace.tools.profiles.State;
 
 public interface ProfilePreferences {
 	
@@ -19,12 +21,21 @@ public interface ProfilePreferences {
 	 * @param resourceSettings
 	 * 		the resource values
 	 */
+	default Future<?> storeProfileConfiguration(
+			ProfileTemplate template,
+			String id,
+			Map<DataPoint, Resource> resourceSettings) {
+		return storeProfileConfiguration(template, id, resourceSettings, null, null);
+	}
+	
 	Future<?> storeProfileConfiguration(
 			ProfileTemplate template,
 			String id,
-			Map<DataPoint, Resource> resourceSettings);
+			Map<DataPoint, Resource> resourceSettings,
+			State endState,
+			OnOffSwitch onOffSwitch);
 	
-	Future<Map<DataPoint, Resource>> loadProfileConfiguration(
+	Future<ProfileData> loadProfileConfiguration(
 			ProfileTemplate template,
 			String id);
 	

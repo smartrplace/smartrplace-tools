@@ -2,6 +2,7 @@ package org.smartrplace.tools.profiles.prefs.model;
 
 import org.ogema.core.model.ResourceList;
 import org.ogema.core.model.simple.StringResource;
+import org.ogema.model.actors.OnOffSwitch;
 import org.ogema.model.prototypes.Configuration;
 import org.smartrplace.tools.profiles.ProfileTemplate;
 
@@ -20,5 +21,9 @@ public interface ProfileConfiguration extends Configuration {
 	StringResource id();
 	
 	ResourceList<DataPointConfig> dataPoints();
+	
+	OnOffSwitch onOffSwitch();
+	
+	StringResource endState();
 	
 }
