@@ -35,7 +35,7 @@ public class HeaterProfileTemplate implements ProfileTemplate {
 	
 	@Override
 	public List<State> states() {
-		return Arrays.asList(StateImpl.OFF, StateImpl.ON);
+		return Arrays.asList(StateImpl.OFF, StateImpl.ON, StateImpl.OFF);
 	}
 
 	@Override
@@ -49,6 +49,8 @@ public class HeaterProfileTemplate implements ProfileTemplate {
 				StandardDataPoints.profileStartTime(false),
 				StandardDataPoints.outsideTemperature(false), 
 				StandardDataPoints.outsideHumidity(false),
+				StandardDataPoints.roomTemperature(false), 
+				StandardDataPoints.roomHumidity(false),
 				StandardDataPoints.powerConsumption(false),
 				StandardDataPoints.roomInfo(true)
 		);

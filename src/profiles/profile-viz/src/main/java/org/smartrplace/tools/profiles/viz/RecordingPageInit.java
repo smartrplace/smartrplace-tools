@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -64,6 +65,7 @@ import de.iwes.widgets.resource.widget.dropdown.ResourceDropdown;
 import de.iwes.widgets.template.DisplayTemplate;
 import de.iwes.widgets.template.LabelledItem;
 
+// TODO: duration grid ordering not working
 class RecordingPageInit {
 
 	private final WidgetPage<?> page;
@@ -80,7 +82,7 @@ class RecordingPageInit {
 	private final Header contextHeader;
 	private final TemplateGrid<DataPoint> contextPointsGrid;
 	private final Header durationsHeader;
-	private final TemplateGrid<State> durations;
+	private final TemplateGrid<OrderedState> durations;
 	private final Button start;
 	private final ButtonConfirm cancel;
 	
@@ -291,7 +293,7 @@ class RecordingPageInit {
 		this.primaryPointsGrid = new DataGrid(page, "primaryPointsGrid", true, appMan, preferencesSelector);
 		this.contextPointsGrid = new DataGrid(page, "contextPointsGrid", false, appMan, preferencesSelector, 
 					Arrays.asList(StandardDataPoints.profileStartTime(true).id()));
-		final RowTemplate<State> durationsTemplate = new RowTemplate<State>() {
+		final RowTemplate<OrderedState> durationsTemplate = new RowTemplate<OrderedState>() {
 			
 			private final Map<String, Object> header;
 			
@@ -304,7 +306,7 @@ class RecordingPageInit {
 			}
 
 			@Override
-			public Row addRow(final State state, final OgemaHttpRequest req) {
+			public Row addRow(final OrderedState state, final OgemaHttpRequest req) {
 				final String id = getLineId(state);
 				final Row row = new Row();
 				row.addCell("state", state.label(req.getLocale()));
@@ -326,13 +328,13 @@ class RecordingPageInit {
 			}
 
 			@Override
-			public String getLineId(State state) {
-				return state.id();
+			public String getLineId(OrderedState state) {
+				return "_" + state.getIdx() + "_" + state.getState().id();
 			}
 			
 			
 		};
-		this.durations = new TemplateGrid<State>(page, "durations", false, durationsTemplate) {
+		this.durations = new TemplateGrid<OrderedState>(page, "durations", false, durationsTemplate) {
 			
 			@Override
 			public void onGET(OgemaHttpRequest req) {
@@ -343,7 +345,12 @@ class RecordingPageInit {
 				}
 				final ProfileTemplate profile = service.getService();
 				try {
-					update(profile.states(), req);
+					final List<State> states = profile.states();
+					final List<OrderedState> ordered = new ArrayList<>(states.size());
+					for (int i=0; i<states.size(); i++) {
+						ordered.add(new OrderedState(states.get(i), i));
+					}
+					update(ordered, req);
 				} finally {
 					service.ungetService(profile);
 				}
@@ -351,6 +358,7 @@ class RecordingPageInit {
 			
 		};
 		setGridStyle(durations);
+		durations.setComparator(OrderedState::compare);
 		this.start = new Button(page, "startRecording", "Start recording") {
 			
 			public void onGET(OgemaHttpRequest req) {
@@ -639,31 +647,32 @@ class RecordingPageInit {
 		}
 	}
 	
-	private static Map<State, Long> getDurations(final TemplateGrid<State> grid, final Collection<State> states, final OgemaHttpRequest req) {
-		final Collection<Row> rows = grid.getRows(req);
-		final Map<State, Long> durations = new HashMap<>(rows.size());
-		for (Row row : rows) {
-			final Map<String, Object> cells = row.cells;
-			final String stateLabel = (String) cells.get("state");
-			final Optional<State> opt = states.stream()
-				.filter(state -> stateLabel.equals(state.label(req.getLocale())))
+	// FIXME ordering of template grid does not work
+	private static List<Long> getDurations(final TemplateGrid<OrderedState> grid, final List<State> states, final OgemaHttpRequest req) {
+		final Collection<Row> rows = grid.getRows(req); 
+		// TODO grid.getRows as Map<OrderedState, Row> and grid.getRow(OrderedState)
+		final List<Long> durations = new ArrayList<>(states.size());
+		int idx = -1;
+		for (State state:states) {
+			idx++;
+			final String label = new OrderedState(state, idx).label(req.getLocale());
+			final Optional<Row> opt = rows.stream()
+				.filter(row -> label.equals(row.cells.get("state")))
 				.findAny();
-			if (!opt.isPresent())
+			if (!opt.isPresent()) {
+				durations.add(null);
 				continue;
-			final Object d = cells.get("duration");
-			if (!(d instanceof ValueInputField<?>))
-				continue;
+			}
+			final Object d = opt.get().cells.get("duration");
 			final Long dur = ((ValueInputField<Long>) d).getNumericalValue(req);
-			if (dur == null)
-				continue;
-			final ChronoUnit unit = ((EnumDropdown<ChronoUnit>) cells.get("unit")).getSelectedItem(req);
+			final ChronoUnit unit = ((EnumDropdown<ChronoUnit>) opt.get().cells.get("unit")).getSelectedItem(req);
 			final long millis = unit.getDuration().toMillis() * dur;
-			durations.put(opt.get(), millis);
+			durations.add(millis);
 		}
 		return durations;
 	}
 	
-	private static List<StateDuration> getDurationObjects(final TemplateGrid<State> grid, final Collection<State> states, final OgemaHttpRequest req) {
+	private static List<StateDuration> getDurationObjects(final TemplateGrid<OrderedState> grid, final Collection<State> states, final OgemaHttpRequest req) {
 		final Collection<Row> rows = grid.getRows(req);
 		final List<StateDuration> durations = new ArrayList<>(rows.size());
 		final Iterator<Row> rowIt = rows.iterator();
@@ -685,7 +694,7 @@ class RecordingPageInit {
 		return durations;
 	}
 	
-	private static void setDurations(final TemplateGrid<State> grid, final List<StateDuration> durations, final OgemaHttpRequest req) {
+	private static void setDurations(final TemplateGrid<OrderedState> grid, final List<StateDuration> durations, final OgemaHttpRequest req) {
 		final Collection<Row> rows = grid.getRows(req);
 		final Iterator<Row> rowIt = rows.iterator();
 		final Iterator<StateDuration> durIt = durations.iterator();
@@ -769,6 +778,54 @@ class RecordingPageInit {
 		grid.setDefaultPrependFillColumn(true);
 		grid.setDefaultColumnGap("1em");
 		grid.setDefaultRowGap("1em");
+	}
+	
+	private static class OrderedState {
+		
+		private final State state;
+		private final int idx;
+		
+		public OrderedState(State state, int idx) {
+			this.state = state;
+			this.idx = idx;
+		}
+		
+		public int getIdx() {
+			return idx;
+		}
+		
+		public State getState() {
+			return state;
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == this)
+				return true;
+			if (!(obj instanceof OrderedState))
+				return false;
+			final OrderedState other = (OrderedState) obj;
+			return Objects.equals(this.getState(), other.getState()) && this.getIdx() == other.getIdx();
+		}
+		
+		@Override
+		public int hashCode() {
+			return state.hashCode() + idx * 7;
+		}
+		
+		@Override
+		public String toString() {
+			return "OrderedState [state = " + state.id() + ", idx = " + idx + "]";
+		}
+		
+		public String label(OgemaLocale  locale) {
+			return state.label(locale) + " (" + idx + ")";
+		}
+		
+		public static int compare(final OrderedState state1, final OrderedState state2) {
+			return Integer.compare(state1.getIdx(), state2.getIdx());
+		}
+		
 	}
 	
 }

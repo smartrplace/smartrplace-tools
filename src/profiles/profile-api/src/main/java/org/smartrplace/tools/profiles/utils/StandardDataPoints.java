@@ -33,6 +33,16 @@ public class StandardDataPoints {
 				optional, "Luftfeuchtigkeit außen", "Outside humidity");
 	}
 	
+	public static DataPointImpl roomTemperature(boolean optional) {
+		return new DataPointImpl("roomTemperature", TemperatureSensor.class, DataType.TIME_SERIES, 
+				optional, "Raumtemperatur", "Room temperature");
+	}
+	
+	public static DataPointImpl roomHumidity(boolean optional) {
+		return new DataPointImpl("roomHumidity", HumiditySensor.class, DataType.TIME_SERIES, 
+				optional, "Raum-Luftfeuchtigkeit", "Room air humidity");
+	}
+	
 	public static DataPointImpl roomInfo(boolean optional) {
 		return new DataPointImpl("roomInfo", Room.class, DataType.STRING, optional, "Raum", "Room");		
 	}

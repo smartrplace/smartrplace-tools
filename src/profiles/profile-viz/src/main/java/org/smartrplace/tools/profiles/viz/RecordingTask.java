@@ -1,6 +1,7 @@
 package org.smartrplace.tools.profiles.viz;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -36,11 +37,11 @@ class RecordingTask implements Callable<Profile> {
 	private final ProfileTemplate template;
 	private final Consumer<State> switchFunction;
 	private final Map<DataPoint, Resource> input;
-	private final Map<State, Long> durations;
+	private final List<Long> durations;
 	private final State endState;
 	
 	public RecordingTask(ComponentServiceObjects<ProfileGeneration> generator, ComponentServiceObjects<ProfileTemplate> service, 
-				Consumer<State> switchFunction, Map<DataPoint, Resource> input, Map<State, Long> durations, State endState) {
+				Consumer<State> switchFunction, Map<DataPoint, Resource> input, List<Long> durations, State endState) {
 		this.generator = Objects.requireNonNull(generator);
 		this.service = Objects.requireNonNull(service);
 		this.switchFunction = Objects.requireNonNull(switchFunction);
@@ -48,6 +49,12 @@ class RecordingTask implements Callable<Profile> {
 		this.durations = Objects.requireNonNull(durations);
 		this.template = service.getService();
 		this.endState = endState; // may be null
+		if (durations.size() != template.states().size() || durations.stream().anyMatch(Objects::isNull)) {
+			final List<State> states = template.states();
+			service.ungetService(template);
+			throw new IllegalArgumentException("Duration array size does not match states array size. Durations: " + durations
+					+ ", states: " + states);
+		}
 		Optional<DataPoint> missing = template.primaryData().stream()
 				.filter(dp -> !dp.optional())
 				.filter(dp -> !input.containsKey(dp))
@@ -91,15 +98,11 @@ class RecordingTask implements Callable<Profile> {
 	
 	private final NavigableMap<Long, State> getStateEndTimes(final ProfileTemplate template) {
 		final List<State> states = template.states();
-		final Optional<State> missing = states.stream()
-			.filter(state -> !durations.containsKey(state))
-			.findAny();
-		if (missing.isPresent())
-			throw new IllegalArgumentException("No duration configured for state " + missing.get());
 		final NavigableMap<Long, State> endTimes = new TreeMap<>();
 		long lastEndTime = 0;
+		final Iterator<Long> durIt = durations.iterator();
 		for (State state: states) {
-			final long d = durations.get(state);
+			final long d = durIt.next();
 			lastEndTime += d;
 			endTimes.put(lastEndTime, state);
 		}
