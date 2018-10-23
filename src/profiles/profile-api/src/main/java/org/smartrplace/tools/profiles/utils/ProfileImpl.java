@@ -17,12 +17,15 @@ public class ProfileImpl implements Profile {
 	private final ProfileTemplate template;
 	private final Map<DataPoint, Object> primary;
 	private final Map<DataPoint, Object> context;
+	private final Map<DataPoint, Object> derived;
 	private final Map<Long, State> stateEndTimes;
 	
-	public ProfileImpl(String id, Map<DataPoint, Object> primary, Map<DataPoint, Object> context, Map<Long, State> stateEndTimes, ProfileTemplate template) {
+	public ProfileImpl(String id, Map<DataPoint, Object> primary, Map<DataPoint, Object> context, Map<DataPoint, Object> derived, 
+			Map<Long, State> stateEndTimes, ProfileTemplate template) {
 		this.id = Objects.requireNonNull(id);
 		this.primary = Collections.unmodifiableMap(primary);
-		this.context = Collections.unmodifiableMap(context);
+		this.context = context == null ? Collections.emptyMap() : Collections.unmodifiableMap(context);
+		this.derived = derived == null ? Collections.emptyMap() : Collections.unmodifiableMap(derived);
 		this.template = Objects.requireNonNull(template);
 		this.stateEndTimes = Collections.unmodifiableMap(stateEndTimes);
 		this.templateId = template.id();
@@ -36,6 +39,16 @@ public class ProfileImpl implements Profile {
 	@Override
 	public Object getContextData(DataPoint dp) {
 		return context.get(dp);
+	}
+	
+	@Override
+	public Object getDerivedData(DataPoint dp) {
+		return derived.get(dp);
+	}
+	
+	@Override
+	public Map<DataPoint, Object> getDerivedData() {
+		return derived;
 	}
 	
 	@Override

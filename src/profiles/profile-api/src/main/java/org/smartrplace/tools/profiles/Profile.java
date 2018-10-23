@@ -22,8 +22,10 @@ public interface Profile extends LabelledItem {
 	 */
 	Object getPrimaryData(DataPoint dp);
 	Object getContextData(DataPoint dp);
+	Object getDerivedData(DataPoint dp);
 	Map<DataPoint, Object> getPrimaryData();
-	Map<DataPoint, Object> getContextData();	
+	Map<DataPoint, Object> getContextData();
+	Map<DataPoint, Object> getDerivedData();
 	Map<Long, State> stateEndTimes();
  	 
 	String templateId();

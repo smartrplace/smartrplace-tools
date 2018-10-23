@@ -88,15 +88,18 @@ public class SerializationUtils {
 		try {
 			final List<DataPoint> primary = template.primaryData();
 			final List<DataPoint> context = template.contextData();
+			final List<DataPoint> derived = template.derivedData();
 			final Map<DataPoint, Object> primaryResults = new LinkedHashMap<>();
 			final Map<DataPoint, Object> contextResults = new LinkedHashMap<>();
+			final Map<DataPoint, Object> derivedResults = new LinkedHashMap<>();
 			final List<State> states = template.states();
 			final Map<Long, State> endTimes = dto.stateEndTimes.entrySet().stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> 
 					states.stream().filter(state -> entry.getValue().equals(state.id())).findAny().orElseThrow(() -> new IllegalArgumentException("Unknown state " + entry.getValue()))));
-			final ProfileImpl profile = new ProfileImpl(dto.id, primaryResults, contextResults, endTimes, template);
 			addPoints(primary, dto, primaryResults);
 			addPoints(context, dto, contextResults);
+			addPoints(derived, dto, derivedResults);
+			final ProfileImpl profile = new ProfileImpl(dto.id, primaryResults, contextResults, derivedResults, endTimes, template);
 			return profile;
 		} finally {
 			service.ungetService(template);
@@ -104,6 +107,8 @@ public class SerializationUtils {
 	}
 	
 	private static void addPoints(final List<DataPoint> points, final ProfileDTO dto, final Map<DataPoint, Object> results) {
+		if (points == null)
+			return;
 		for (DataPoint dp : points) {
 			final String key = dp.id();
 			final Object value = getValue(key, dto);
@@ -139,8 +144,12 @@ public class SerializationUtils {
 			final Field contextField = ProfileImpl.class.getDeclaredField("context");
 			contextField.setAccessible(true);
 			final Map<DataPoint, Object> context = (Map<DataPoint, Object>) contextField.get(profile);
+			final Field derivedField = ProfileImpl.class.getDeclaredField("derived");
+			derivedField.setAccessible(true);
+			final Map<DataPoint, Object> derived = (Map<DataPoint, Object>) derivedField.get(profile);
 			addValues(dto, context);
 			addValues(dto, primary);
+			addValues(dto, derived);
 		} catch (Exception e) {
 			throw new RuntimeException("Unexpected exception",e);
 		}

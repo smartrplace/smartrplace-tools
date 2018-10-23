@@ -13,4 +13,7 @@ public class Temperatures {
 	public static DataPointImpl humidityHeated 
 		= new DataPointImpl("humHeated", HumiditySensor.class, DataType.TIME_SERIES, false, "Luftfeuchtigkeit erhitzt", "Air humidity heated");
 
+	public static DataPointImpl dewPoint 
+		= new DataPointImpl("dewPointTemp", TemperatureSensor.class, DataType.TIME_SERIES, false, "Taupunkttemperatur", "Dew point temperature");
+	
 }

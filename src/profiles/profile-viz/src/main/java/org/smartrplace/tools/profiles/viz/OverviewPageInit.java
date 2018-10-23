@@ -82,6 +82,7 @@ class OverviewPageInit {
 				// TODO select primary and/or context data, etc
 				Stream<Map.Entry<DataPoint, Object>> stream = profile.getPrimaryData().entrySet().stream();
 				stream = Stream.concat(stream, profile.getContextData().entrySet().stream());
+				stream = Stream.concat(stream, profile.getDerivedData().entrySet().stream());
 				final List<DataPoint> points = stream
 						.filter(entry -> entry.getValue() instanceof ReadOnlyTimeSeries)
 						.map(Map.Entry::getKey)
@@ -112,6 +113,7 @@ class OverviewPageInit {
 				// TODO select primary and/or context data, etc
 				Stream<Map.Entry<DataPoint, Object>> stream = profile.getPrimaryData().entrySet().stream();
 				stream = Stream.concat(stream, profile.getContextData().entrySet().stream());
+				stream = Stream.concat(stream, profile.getDerivedData().entrySet().stream());
 				final Map<String, SchedulePresentationData> schedules = stream
 					.filter(entry -> points.contains(entry.getKey()))
 					.filter(entry -> entry.getValue() instanceof ReadOnlyTimeSeries)

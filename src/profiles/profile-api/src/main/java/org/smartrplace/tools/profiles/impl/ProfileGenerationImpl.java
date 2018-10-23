@@ -271,7 +271,8 @@ public class ProfileGenerationImpl implements ProfileGeneration {
 			if (endState != null && switchFunction != null)
 				switchFunction.accept(endState);
 			logger.info("Profile generation completed: {}, primary result keys: {}", profileId, resultsPrimary.keySet());
-			return new ProfileImpl(profileId, resultsPrimary, resultsContext, stateDurations, template);
+			return new ProfileImpl(profileId, resultsPrimary, resultsContext, template.derivedData(resultsPrimary, resultsContext),
+					stateDurations, template);
 		} finally {
 			listeners.forEach((dp, listener) -> {
 				try {

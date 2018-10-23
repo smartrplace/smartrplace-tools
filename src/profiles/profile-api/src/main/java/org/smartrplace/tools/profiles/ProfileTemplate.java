@@ -16,7 +16,10 @@
  */
 package org.smartrplace.tools.profiles;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+
 import de.iwes.widgets.template.LabelledItem;
 
 public interface ProfileTemplate extends LabelledItem {
@@ -27,5 +30,13 @@ public interface ProfileTemplate extends LabelledItem {
 	List<State> states();
 	List<DataPoint> primaryData();
 	List<DataPoint> contextData();
+	
+	default List<DataPoint> derivedData() {
+		return Collections.emptyList();
+	}
+	
+	default Map<DataPoint, Object> derivedData(Map<DataPoint, Object> primaryData, Map<DataPoint, Object> contextData) {
+		return Collections.emptyMap();
+	}
 	
 }
