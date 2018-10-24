@@ -31,6 +31,9 @@ import de.iwes.widgets.api.widgets.localisation.OgemaLocale;
 )
 public class HeaterProfileTemplate implements ProfileTemplate {
 	
+	private static final float b = 18.678F;
+	private static final float c = 257.14F;
+	
 	@Override
 	public String id() {
 		return "electricHeating";
@@ -75,26 +78,22 @@ public class HeaterProfileTemplate implements ProfileTemplate {
 	public Map<DataPoint, Object> derivedData(Map<DataPoint, Object> primaryData, Map<DataPoint, Object> contextData) {
 		final ReadOnlyTimeSeries tempInside = (ReadOnlyTimeSeries) primaryData.get(Temperatures.temperatureHeated);
 		final ReadOnlyTimeSeries humInside = (ReadOnlyTimeSeries) primaryData.get(Temperatures.humidityHeated);
-		final ReadOnlyTimeSeries tempOutside = (ReadOnlyTimeSeries) contextData.get(StandardDataPoints.outsideTemperature(false));
-		final ReadOnlyTimeSeries humidityOutside = (ReadOnlyTimeSeries) contextData.get(StandardDataPoints.outsideHumidity(false));
 		final MultiTimeSeriesIterator it = MultiTimeSeriesIteratorBuilder.newBuilder(Arrays.asList(
 					tempInside.iterator(),
-					humInside.iterator(),
-					tempOutside.iterator(),
-					humidityOutside.iterator()
+					humInside.iterator()
 				))
 				.setGlobalInterpolationMode(InterpolationMode.LINEAR)
 				.build();
 		final FloatTimeSeries result = new FloatTreeTimeSeries();
 		while (it.hasNext()) {
 			final SampledValueDataPoint point = it.next();
-			final float tIn = point.getElement(0).getValue().getFloatValue();
+			final float tIn = point.getElement(0).getValue().getFloatValue() - 273.15F;
 			final float hIn = point.getElement(1).getValue().getFloatValue();
-			final float tOut = point.getElement(2).getValue().getFloatValue();
-			final float hOut = point.getElement(3).getValue().getFloatValue();
 			// TODO calculate dew point temperature
-			final float dewPoint = (tIn + tOut) / 2 * hIn / hOut; // nonsense formula
-			result.addValue(point.getTimestamp(), new FloatValue(dewPoint));
+			// https://en.wikipedia.org/wiki/Dew_point
+			final float gamma = (float) (Math.log(hIn) + b * tIn / (c + tIn));
+			final float dewPoint = c * gamma / (b - gamma); // in °C
+			result.addValue(point.getTimestamp(), new FloatValue(dewPoint + 273.15F));
 		}
 		return Collections.singletonMap(Temperatures.dewPoint, result);
 	}
