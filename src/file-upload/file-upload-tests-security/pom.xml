@@ -25,13 +25,22 @@
             <plugin>
             	<groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <!-- 
                 <configuration>
                     <argLine>
                         -ea
                         -Djava.security.policy=config/all.policy -Dorg.ogema.security=on
-	                    --illegal-access=warn
-	                    --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
-	                    --add-modules java.xml.bind,java.xml.ws.annotation
+	                    -illegal-access=warn
+	                    -add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
+	                    -add-modules java.xml.bind,java.xml.ws.annotation
+                    </argLine>
+                    <trimStackTrace>false</trimStackTrace>
+                </configuration>
+                -->
+                <configuration>
+                    <argLine>
+                        -ea
+                        -Djava.security.policy=config/all.policy -Dorg.ogema.security=on
                     </argLine>
                     <trimStackTrace>false</trimStackTrace>
                 </configuration>

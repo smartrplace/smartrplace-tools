@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+   	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>org.test</groupId>
+	 <artifactId>felix-test</artifactId>
+	<version>0.0.1-SNAPSHOT</version>	
+   
+    <properties>
+    	<pax.exam.version>4.12.0</pax.exam.version>
+    </properties>
+    
+    <build>
+        <plugins>
+        	 <plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.9</source>
+					<target>1.9</target>
+				</configuration>
+			</plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>
+                        -ea
+	                    --illegal-access=warn
+	                    --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
+                    </argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+    <!-- test only dependencies below -->
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.core</artifactId>
+			<version>6.0.0</version>
+			<scope>test</scope>
+        </dependency>
+     	<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+		 <dependency>
+			<groupId>org.ops4j.pax.exam</groupId>
+			<artifactId>pax-exam-junit4</artifactId>
+			<version>${pax.exam.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- forked container does not support framework extension bundles -->
+		<dependency>
+		    <groupId>org.ops4j.pax.exam</groupId>
+		    <artifactId>pax-exam-container-native</artifactId>
+		    <version>${pax.exam.version}</version>
+		    <scope>test</scope>
+		</dependency>
+		 
+		<dependency>
+			<groupId>org.apache.felix</groupId>
+			<artifactId>org.apache.felix.framework</artifactId>
+			<version>6.0.0</version>
+			<scope>test</scope>
+		</dependency>
+		
+		<!-- 
+		<dependency>
+			<groupId>org.eclipse.tycho</groupId>
+			<artifactId>org.eclipse.osgi</artifactId>
+			<version>3.13.0.v20180226-1711</version>
+			<scope>test</scope>
+		</dependency>
+		-->
+		<dependency>
+			<groupId>org.ops4j.pax.exam</groupId>
+			<artifactId>pax-exam-link-mvn</artifactId>
+			<version>${pax.exam.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.ops4j.pax.url</groupId>
+			<artifactId>pax-url-aether</artifactId>
+			<version>2.5.4</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- 
+		<dependency>
+			<groupId>org.ops4j.pax.url</groupId>
+			<artifactId>pax-url-wrap</artifactId>
+			<version>2.5.4</version>
+			<scope>test</scope>
+		</dependency>
+		-->
+   </dependencies>
+</project>

@@ -1,5 +1,6 @@
 package org.smartrplace.tools.upload.server.impl;
 
+import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.smartrplace.tools.upload.server.FileUploadConstants;
 
@@ -39,11 +40,13 @@ public @interface FileUploadConfiguration {
 	int maxFileNameLength() default 50;
 
 	/**
+	 * Use HttpWhiteboardConstants#HTTP_WHITEBOARD_SERVLET_MULTIPART_MAXFILESIZE instead: 
+	 * "osgi.http.whiteboard.servlet.multipart.maxFileSize"
 	 * The maximum allowed file size
 	 * Default 100 MB
 	 * @return
 	 */
-	long maxFileSize() default 1024*1024*100;
+//	long maxFileSize() default 1024*1024*100;
 	
 	/**
 	 * The maximum allowed total request size

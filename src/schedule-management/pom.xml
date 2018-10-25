@@ -16,8 +16,8 @@
 	<version>1.0.2-SNAPSHOT</version>
 	
 	<properties>
-		<guava.version.max>26.0</guava.version.max>
-		<org.json.version.max>20180131</org.json.version.max>
+		<guava.version.max>28.0</guava.version.max>
+		<org.json.version.max>20180814</org.json.version.max>
 	</properties>
 
 	<repositories>

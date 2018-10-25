@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -40,7 +39,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.apache.commons.io.FileUtils;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentException;
 import org.osgi.service.component.annotations.Activate;
@@ -71,7 +69,9 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 		service=Servlet.class,
 		property = {
 				HttpWhiteboardConstants.HTTP_WHITEBOARD_SERVLET_PATTERN + "=" + FileUploadConstants.PATH + "/*",
-				HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_SELECT + "=" + ServletConstants.CONTEXT_FILTER
+				HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_SELECT + "=" + ServletConstants.CONTEXT_FILTER,
+				HttpWhiteboardConstants.HTTP_WHITEBOARD_SERVLET_MULTIPART_ENABLED + ":Boolean=true",
+				HttpWhiteboardConstants.HTTP_WHITEBOARD_SERVLET_MULTIPART_MAXFILESIZE + ":Long=20000000"
 		},
 		configurationPid=FileUploadConstants.FILE_UPLOAD_PID,
 		configurationPolicy=ConfigurationPolicy.REQUIRE
@@ -224,15 +224,19 @@ public class FileUploadServlet extends HttpServlet  {
 			return;
 		final String path = path0;
 		// TODO replace by standard multi part config
+		/*
 		final MultipartConfigElement mce = new MultipartConfigElement(tempFolder.toString(), config.maxFileSize(), config.maxRequestSize(), (int) config.fileSizeThreshold());
 		final MultiPartInputStreamParser mpisp = new MultiPartInputStreamParser(req.getInputStream(), req.getContentType(), mce, tempFolder.toFile()); 
 		mpisp.getParts();
-		final Part configPart = mpisp.getPart("config"); // fails due to jetty bug if we did not call mpisp.getParts() before // https://github.com/eclipse/jetty.project/issues/2892
+		*/
+//		final Part configPart = mpisp.getPart("config"); // fails due to jetty bug if we did not call mpisp.getParts() before // https://github.com/eclipse/jetty.project/issues/2892
+		final Part configPart = req.getPart("config");
 	    final AtomicBoolean success = new AtomicBoolean(true);
 	    final AtomicInteger response = new AtomicInteger(-1);
 	    final StringBuilder report = new StringBuilder();
 		try {
-			final Collection<Part> parts = mpisp.getParts();
+//			final Collection<Part> parts = mpisp.getParts();
+			final Collection<Part> parts = req.getParts();
 			parts.stream()
 				.filter(part -> part.getContentType() != null && part.getContentType().startsWith("application/octet-stream"))
 				.forEach(filePart -> {
