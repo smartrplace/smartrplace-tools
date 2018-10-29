@@ -195,7 +195,7 @@ public class ContextSecurityTest extends SecurityTestBase {
 	
 	private boolean addUserFilePermission(final Bundle bundle, final boolean includeWritePermission) {
 		final String user = bundle.getLocation().substring("urp:".length());
-		String path = Paths.get(".").relativize(uploadFolder).resolve(user).normalize().toString().replace('\\', '/');
+		String path = uploadFolder.resolve(user).normalize().toString().replace('\\', '/');
 		if (!path.startsWith(".") && !path.startsWith("/")) // relative FilePermission behaves super strange... we need to stick to a fixed convention for the paths
 			path = "./" + path;
 		return addFilePermission(bundle, path, includeWritePermission);
