@@ -2,6 +2,7 @@ package org.smartrplace.tools.servletcontext.impl;
 
 import java.io.IOException;
 import java.security.AccessControlContext;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -14,6 +15,7 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.http.context.ServletContextHelper;
 import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
 import org.slf4j.LoggerFactory;
+import org.smartrplace.tools.servlet.api.AppAuthentication;
 import org.smartrplace.tools.servlet.api.ServletAccessControl;
 import org.smartrplace.tools.servlet.api.ServletConstants;
 
@@ -26,17 +28,18 @@ import org.smartrplace.tools.servlet.api.ServletConstants;
 )
 public class SmartrplaceServletContextHelper extends ServletContextHelper implements ServletAccessControl {
 	
-	@Reference
+	@Reference(service=PermissionManager.class)
 	private ComponentServiceObjects<PermissionManager> permManService;
-    @Reference
-    private ComponentServiceObjects<RestAccess> restAccessService;
+    @Reference(service=AppAuthentication.class)
+    private ComponentServiceObjects<AppAuthentication> appAuthService;
+    @Reference(service=RestAccess.class)
+    private ComponentServiceObjects<RestAccess> restAccService;    
 	private final ThreadLocal<AccessControlContext> localContext = new ThreadLocal<AccessControlContext>();
 	
     @Override
     public boolean handleSecurity(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    	final RestAccess restAcc = restAccessService.getService();
     	try {
-    		final AccessControlContext ctx = restAcc.getAccessContext(request, response);
+    		final AccessControlContext ctx = getContext(request);
     		if (ctx == null) {
     			request.removeAttribute(REMOTE_USER);
     			response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
@@ -54,10 +57,31 @@ public class SmartrplaceServletContextHelper extends ServletContextHelper implem
 			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 			LoggerFactory.getLogger(getClass()).warn("Servlet exception",e);
 			return false;
-		} finally {
-    		restAccessService.ungetService(restAcc);
     	}
     }
+    
+    private AccessControlContext getContext(final HttpServletRequest req) throws ServletException, IOException {
+    	final RestAccess ra = restAccService.getService();
+    	try {
+    		final AccessControlContext ctx = ra.getAccessContext(req, null);
+    		if (ctx != null)
+    			return ctx;
+    	} catch (NullPointerException expected) { 
+    	} finally {
+    		restAccService.ungetService(ra);
+    	}
+    	final String token = req.getHeader("Authorization");
+    	if (token == null || !token.toLowerCase().startsWith("bearer "))
+    		return null;
+    	final String token1 = token.substring("bearer ".length());
+    	final AppAuthentication appAuth = appAuthService.getService();
+    	try {
+    		return appAuth.getContext(token1.toCharArray());
+    	} finally {
+    		appAuthService.ungetService(appAuth);
+    	}
+    }
+    
     
     private boolean setUsername(final HttpServletRequest request) {
     	final PermissionManager permMan = permManService.getService();

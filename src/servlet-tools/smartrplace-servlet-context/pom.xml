@@ -20,6 +20,10 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                 	<instructions>
+                		<Import-Package>
+                			com.google.common.cache;version="[${guava.version.min},${guava.version.max})",
+ 							*
+                		</Import-Package>
                 		<Export-Package>
                 			org.smartrplace.tools.servlet.api
                 		</Export-Package>
@@ -52,5 +56,14 @@
 			<artifactId>internal-api</artifactId>
 			<version>${ogema.api.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+		</dependency>
+		<dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.5</version>
+        </dependency>
    </dependencies>
 </project>
