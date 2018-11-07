@@ -53,13 +53,11 @@
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>osgi.core</artifactId>
-			<version>7.0.0</version>
 			<scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>osgi.cmpn</artifactId>
-			<version>7.0.0</version>
 			<scope>test</scope>
         </dependency>
      	<dependency>
@@ -87,7 +85,6 @@
 		<dependency>
      		<groupId>org.ogema.ref-impl</groupId>
      		<artifactId>internal-api</artifactId>
-     		<version>${ogema.version}</version>
      		<scope>test</scope>
      	</dependency>
      	<dependency>
@@ -133,7 +130,6 @@
 		<dependency>
 		    <groupId>org.ogema.core</groupId>
 		    <artifactId>api</artifactId>
-		    <version>${ogema.api.version}</version>
 		    <scope>test</scope>
 		</dependency>
 		<dependency>

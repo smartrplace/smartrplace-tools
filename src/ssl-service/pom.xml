@@ -32,7 +32,7 @@
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
-				<version>3.5.0</version>
+				<version>4.0.0</version>
 				<configuration>
                     <instructions>
                         <Import-Package>
@@ -49,12 +49,12 @@
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>osgi.core</artifactId>
-			<version>7.0.0</version>
+			<version>6.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>osgi.cmpn</artifactId>
-			<version>7.0.0</version>
+			<version>6.0.0</version>
         </dependency>
      	<dependency>
      		<groupId>org.slf4j</groupId>

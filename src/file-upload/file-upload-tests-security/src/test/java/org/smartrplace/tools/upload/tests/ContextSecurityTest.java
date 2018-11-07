@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.security.Permission;
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,7 +56,7 @@ import org.smartrplace.tools.upload.server.FileUploadConstants;
 @ExamReactorStrategy(PerClass.class)
 public class ContextSecurityTest extends SecurityTestBase {
 
-	private static final String OGEMA_VERSION = "2.1.4-SNAPSHOT";
+	private static final String OGEMA_VERSION = "2.2.0";
 	private final static AtomicInteger permissionCnt = new AtomicInteger(0);
 	private final static AtomicInteger userCnt = new AtomicInteger(0);
 

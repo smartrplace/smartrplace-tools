@@ -37,7 +37,7 @@ import org.smartrplace.tools.upload.api.FileConfiguration;
 @ExamReactorStrategy(PerClass.class)
 public class ContextHelperTest extends TestBase {
 
-	private static final String OGEMA_VERSION = "2.1.4-SNAPSHOT";
+	private static final String OGEMA_VERSION = "2.2.0";
 	
 	@Inject
 	private PermissionManager permMan;

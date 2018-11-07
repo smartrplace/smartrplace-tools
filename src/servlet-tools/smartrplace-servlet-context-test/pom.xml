@@ -111,7 +111,6 @@
 		<dependency>
      		<groupId>org.ogema.core</groupId>
      		<artifactId>api</artifactId>
-     		<version>${ogema.api.version}</version>
      		<scope>test</scope>
      	</dependency>
 		<dependency>

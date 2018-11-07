@@ -43,6 +43,7 @@ import org.smartrplace.tools.upload.server.FileUploadConstants;
 public class SecurityTestBase {
 
 	private static final String slf4jVersion = "1.7.25";
+	private static final String jacksonVersion = "2.9.7";
 	static final String uploadVersion = "0.0.1-SNAPSHOT";
 	static final int HTTP_PORT = 4712;
 	protected static final Path configFile = Paths.get("data/test.config");
@@ -90,8 +91,8 @@ public class SecurityTestBase {
 						CoreOptions.vmOption("--add-modules=java.xml.bind,java.xml.ws.annotation")
 					),
 				CoreOptions.junitBundles(),
-				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.scr", "2.1.7-SNAPSHOT"),
-				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.configadmin", "1.9.5-SNAPSHOT"),
+				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.scr", "2.1.8"),
+				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.configadmin", "1.9.6"),
 				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.configurator", "1.0.5-SNAPSHOT"),
 //				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.eventadmin", "1.5.0"),
 //				CoreOptions.mavenBundle("org.osgi", "org.osgi.service.useradmin", "1.1.0"),
@@ -101,10 +102,10 @@ public class SecurityTestBase {
 //				CoreOptions.mavenBundle("javax.servlet", "javax.servlet-api", "3.1.0"),
 				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.http.servlet-api", "1.1.2"),
 				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.http.jetty", "4.0.4").start(),
-				CoreOptions.mavenBundle("com.fasterxml.jackson.core", "jackson-core", "2.9.6"),
-				CoreOptions.mavenBundle("com.fasterxml.jackson.core", "jackson-annotations", "2.9.6"),
-				CoreOptions.mavenBundle("com.fasterxml.jackson.core", "jackson-databind", "2.9.6"),
-				CoreOptions.mavenBundle("com.fasterxml.jackson.module", "jackson-module-jaxb-annotations", "2.9.6"),
+				CoreOptions.mavenBundle("com.fasterxml.jackson.core", "jackson-core", jacksonVersion),
+				CoreOptions.mavenBundle("com.fasterxml.jackson.core", "jackson-annotations", jacksonVersion),
+				CoreOptions.mavenBundle("com.fasterxml.jackson.core", "jackson-databind", jacksonVersion),
+				CoreOptions.mavenBundle("com.fasterxml.jackson.module", "jackson-module-jaxb-annotations", jacksonVersion),
 				CoreOptions.mavenBundle("commons-io", "commons-io", "2.6"),
 				//
 				CoreOptions.mavenBundle("org.slf4j", "slf4j-api", slf4jVersion),
