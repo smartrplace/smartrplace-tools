@@ -55,7 +55,9 @@
 	<modules>
 		<module>smartrplace-servlet-api</module>
 		<module>smartrplace-servlet-context</module>
+		<!--
 		<module>smartrplace-servlet-context-test</module>
+		 -->
 	</modules>
 
 	<dependencyManagement>
