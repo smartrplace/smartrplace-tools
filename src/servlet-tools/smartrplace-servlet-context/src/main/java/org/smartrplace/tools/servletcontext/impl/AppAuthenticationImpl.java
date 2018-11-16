@@ -23,18 +23,37 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.smartrplace.tools.servlet.api.AppAuthentication;
 import org.smartrplace.tools.servlet.api.ServletConstants;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-@Component(service=Application.class)
+@Component(
+		service=Application.class,
+		configurationPid=AppAuthenticationImpl.PID,
+		configurationPolicy=ConfigurationPolicy.OPTIONAL
+)
+@Designate(ocd=AppAuthenticationImpl.Config.class)
 public class AppAuthenticationImpl extends HttpServlet implements AppAuthentication, Application {
 
+	public static final String PID = "ogr.smartrplace.tools.servletcontext.AppAuthentication";
 	private static final long serialVersionUID = 1L;
+	private int nrChars = 24;
 
+	@ObjectClassDefinition
+	static @interface Config {
+		
+		@AttributeDefinition(description="Password size/nr characters", defaultValue="24")
+		int pwChars() default 24;
+		
+	}
+	
 
 	@Reference
     private ComponentServiceObjects<RestAccess> restAccessService;
@@ -49,8 +68,9 @@ public class AppAuthenticationImpl extends HttpServlet implements AppAuthenticat
 	private ServiceRegistration<AppAuthentication> ownReg;
 	private ApplicationManager appMan;
 	
-	protected void activate(BundleContext ctx) {
+	protected void activate(BundleContext ctx, Config config) {
 		this.ctx = ctx;
+		this.nrChars = config.pwChars() > 8 ? config.pwChars() : 24;
 	}
 	
 	@Override
@@ -102,21 +122,24 @@ public class AppAuthenticationImpl extends HttpServlet implements AppAuthenticat
 			resp.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 			return;
 		}
-		Context value = (Context) session.getAttribute(ATTRIBUTE);
+		Context value = null;
+		try {
+			value = (Context) session.getAttribute(ATTRIBUTE);
+		} catch (ClassCastException expected) {} // happens when the bundle gets updated
 		if (value == null) {
 			value = new Context();
 			session.setAttribute(ATTRIBUTE, value);
 		}
 		String r;
 		while (true) {
-			r = RandomStringUtils.random(20, 0, 0, true, true, null, rand);
+			r = RandomStringUtils.random(nrChars, 0, 0, true, true, null, rand);
 			final Context old = cache.asMap().putIfAbsent(r, value);
 			if (old == null)
 				break;
 		}
 		value.accs.put(r, ctx);
 		resp.getWriter().write(r);
-		resp.setContentType("test/plain");
+		resp.setContentType("text/plain");
 		resp.setStatus(HttpServletResponse.SC_OK);
 	}
 	

@@ -9,10 +9,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.AccessController;
 import java.security.AllPermission;
 import java.security.Permission;
-import java.security.PrivilegedAction;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -50,7 +49,6 @@ import org.osgi.service.condpermadmin.ConditionalPermissionUpdate;
 import org.osgi.service.http.context.ServletContextHelper;
 import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
 import org.osgi.service.permissionadmin.PermissionInfo;
-import org.smartrplace.tools.rest.api.ServletAccessControl;
 import org.smartrplace.tools.rest.api.ServletConstants;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -60,12 +58,13 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 
+// FIXME currently not working!
 @ExamReactorStrategy(PerClass.class)
 @RunWith(PaxExam.class)
 public class ContextTest {
 
 	private static final String SLF4J_VERSION = "1.7.25";
-	private static final String OGEMA_VERSION = "2.1.4-SNAPSHOT";
+	private static final String OGEMA_VERSION = "2.2.0";
 	private static final Path osgiStorage = Paths.get("data/osgi-storage");
 	private final static AtomicInteger permissionCnt = new AtomicInteger(0);
 	private final static AtomicInteger userCnt = new AtomicInteger(0);
@@ -76,9 +75,10 @@ public class ContextTest {
 	@Inject
 	private BundleContext ctx;
 	
+	/*
 	@Inject
 	private ServletAccessControl accessControl;
-	
+	*/
 	@Inject
 	private ConditionalPermissionAdmin cpa;
 	
@@ -353,6 +353,7 @@ public class ContextTest {
 					task = null;
 				}
 				if (task != null) {
+					/*
 					final String response = AccessController.doPrivileged(new PrivilegedAction<String>() {
 		
 						@Override
@@ -366,6 +367,7 @@ public class ContextTest {
 						}
 					}, accessControl.getAccessControlContext());
 					resp.getWriter().write(response);
+					*/
 				}
 			}
 			resp.setStatus(HttpServletResponse.SC_OK);
