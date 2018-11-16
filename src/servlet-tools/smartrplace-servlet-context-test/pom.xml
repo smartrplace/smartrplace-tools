@@ -121,7 +121,7 @@
      	</dependency>
      	<dependency>
      		<groupId>org.smartrplace.tools</groupId>
-     		<artifactId>smartrplace-rest-context</artifactId>
+     		<artifactId>smartrplace-servlet-context</artifactId>
      		<version>${project.version}</version>
      		<scope>test</scope>
      	</dependency>
