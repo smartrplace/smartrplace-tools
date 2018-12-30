@@ -28,7 +28,7 @@
 	
 	<modules>
 		<module>executor-service</module>
-		<!-- <module>file-upload</module>-->
+		<module>file-upload</module>
 		<module>ogema-timer-utils</module>
 		<module>ogema-timeseries-rest</module>
 		<module>profiles</module>

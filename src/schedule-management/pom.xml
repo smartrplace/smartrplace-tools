@@ -9,6 +9,22 @@
 	<packaging>bundle</packaging>
 	<version>1.0.2</version>
 	
+	<inceptionYear>2017</inceptionYear>
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	
+	<scm>
+		<connection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</connection>
+		<developerConnection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</developerConnection>
+		<url>https://github.com/smartrplace/smartrplace-tools</url>
+		<tag>HEAD</tag>
+	</scm>
+	
 	<properties>
 	    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	    <osgi.version>5.0.0</osgi.version>
@@ -121,10 +137,10 @@
 					<version>3.0</version>
 					<configuration>
                         <!-- see 'mvn com.mycila:license-maven-plugin:help -Ddetail=true' -->
-						<header>header.txt</header>
+						<header>../header.txt</header>
                         <keywords> <!-- existing license headers contain all of these keywords -->
                             <keyword>Smartrplace</keyword>
-                            <keyword>GNU</keyword>
+                            <keyword>Apache</keyword>
                             <keyword>License</keyword>
                         </keywords>
 						<properties>
