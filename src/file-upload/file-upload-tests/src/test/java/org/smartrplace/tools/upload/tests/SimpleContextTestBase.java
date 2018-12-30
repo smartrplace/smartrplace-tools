@@ -6,9 +6,11 @@ import java.util.Hashtable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceRegistration;
@@ -17,6 +19,7 @@ import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
 import org.smartrplace.tools.servlet.api.ServletAccessControl;
 import org.smartrplace.tools.servlet.api.ServletConstants;
 
+@RunWith(PaxExam.class)
 public class SimpleContextTestBase extends TestBase {
 
 	protected SimpleContextTestBase() {
@@ -42,7 +45,7 @@ public class SimpleContextTestBase extends TestBase {
 	
 	public Option[] contextBundles() {
 		return new Option[] {
-			CoreOptions.wrappedBundle(CoreOptions.maven("org.smartrplace.tools", "smartrplace-servlet-api", "0.0.1-SNAPSHOT"))
+			CoreOptions.wrappedBundle(CoreOptions.maven("org.smartrplace.tools", "smartrplace-servlet-api", "0.0.1"))
 		};
 	}
 	

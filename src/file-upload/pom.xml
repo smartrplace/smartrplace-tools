@@ -5,7 +5,7 @@
 	
 	<groupId>org.smartrplace.tools</groupId>
 	<artifactId>file-upload</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>File upload tools</name>
 	<packaging>pom</packaging>
 	<url>http://smartrplace.de</url>
@@ -21,11 +21,11 @@
 	
 	<properties>
 	    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	    <executor.version>0.0.1-SNAPSHOT</executor.version>
+	    <executor.version>0.0.1</executor.version>
 	    <jackson.version>2.9.0</jackson.version>
 	    <osgi.version>7.0.0</osgi.version>
 		<ogema.version>2.2.0</ogema.version>
-		<ssl.version>0.0.1-SNAPSHOT</ssl.version>
+		<ssl.version>0.0.1</ssl.version>
 	</properties>
 
 	<scm>

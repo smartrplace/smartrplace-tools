@@ -4,12 +4,20 @@
 	
 	<groupId>org.smartrplace.tools</groupId>
     <artifactId>ssl-service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
     <name>SSL service</name>
     <description>Provides a configurable SSL context by means of an OSGi service</description>
     
     <packaging>bundle</packaging>
+    <licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
     <properties>
+    	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     	<pax.exam.version>4.12.0</pax.exam.version>
     </properties>
     

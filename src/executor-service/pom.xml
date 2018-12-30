@@ -4,14 +4,22 @@
 	
 	<groupId>org.smartrplace.tools</groupId>
     <artifactId>executor-service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
     <name>Executor service</name>
     <description>Provides executors as an OSGi service</description>
     
     <packaging>bundle</packaging>
     <properties>
     	<pax.exam.version>4.12.0</pax.exam.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+    <licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
     
     <build>
         <plugins>

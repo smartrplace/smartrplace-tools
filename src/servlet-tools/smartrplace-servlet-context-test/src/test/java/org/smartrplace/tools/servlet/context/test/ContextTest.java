@@ -9,8 +9,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.AccessController;
 import java.security.AllPermission;
 import java.security.Permission;
+import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -48,7 +50,8 @@ import org.osgi.service.condpermadmin.ConditionalPermissionUpdate;
 import org.osgi.service.http.context.ServletContextHelper;
 import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
 import org.osgi.service.permissionadmin.PermissionInfo;
-import org.smartrplace.tools.rest.api.ServletConstants;
+import org.smartrplace.tools.servlet.api.ServletAccessControl;
+import org.smartrplace.tools.servlet.api.ServletConstants;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.fluent.Request;
@@ -57,7 +60,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 
-// FIXME currently not working!
 @ExamReactorStrategy(PerClass.class)
 @RunWith(PaxExam.class)
 public class ContextTest {
@@ -74,10 +76,9 @@ public class ContextTest {
 	@Inject
 	private BundleContext ctx;
 	
-	/*
 	@Inject
 	private ServletAccessControl accessControl;
-	*/
+
 	@Inject
 	private ConditionalPermissionAdmin cpa;
 	
@@ -262,7 +263,7 @@ public class ContextTest {
 				CoreOptions.mavenBundle("org.ops4j.pax.tinybundles", "tinybundles", "3.0.0"),
 				CoreOptions.mavenBundle("biz.aQute.bnd", "biz.aQute.bndlib", "3.5.0"),
 				
-				CoreOptions.mavenBundle("org.smartrplace.tools", "smartrplace-servlet-context", "0.0.1-SNAPSHOT"),
+				CoreOptions.mavenBundle("org.smartrplace.tools", "smartrplace-servlet-context", "0.0.1"),
 				CoreOptions.mavenBundle("org.apache.httpcomponents", "httpclient-osgi", "4.5.6"),
 				CoreOptions.mavenBundle("org.apache.httpcomponents", "httpcore-osgi","4.4.10"), 
 				CoreOptions.mavenBundle("commons-logging", "commons-logging", "1.1.3") 
@@ -352,7 +353,6 @@ public class ContextTest {
 					task = null;
 				}
 				if (task != null) {
-					/*
 					final String response = AccessController.doPrivileged(new PrivilegedAction<String>() {
 		
 						@Override
@@ -366,7 +366,6 @@ public class ContextTest {
 						}
 					}, accessControl.getAccessControlContext());
 					resp.getWriter().write(response);
-					*/
 				}
 			}
 			resp.setStatus(HttpServletResponse.SC_OK);

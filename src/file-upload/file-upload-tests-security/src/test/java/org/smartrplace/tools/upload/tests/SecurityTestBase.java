@@ -44,7 +44,7 @@ public class SecurityTestBase {
 
 	private static final String slf4jVersion = "1.7.25";
 	private static final String jacksonVersion = "2.9.7";
-	static final String uploadVersion = "0.0.1-SNAPSHOT";
+	static final String uploadVersion = "0.0.1";
 	static final int HTTP_PORT = 4712;
 	protected static final Path configFile = Paths.get("data/test.config");
 	protected static final Path osgiStorage = Paths.get("data/osgi-storage");
@@ -91,9 +91,9 @@ public class SecurityTestBase {
 						CoreOptions.vmOption("--add-modules=java.xml.bind,java.xml.ws.annotation")
 					),
 				CoreOptions.junitBundles(),
-				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.scr", "2.1.8"),
-				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.configadmin", "1.9.6"),
-				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.configurator", "1.0.5-SNAPSHOT"),
+				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.scr", "2.1.14"),
+				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.configadmin", "1.9.10"),
+				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.configurator", "1.0.8"),
 //				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.eventadmin", "1.5.0"),
 //				CoreOptions.mavenBundle("org.osgi", "org.osgi.service.useradmin", "1.1.0"),
 //				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.useradmin", "1.0.3"),
@@ -116,8 +116,8 @@ public class SecurityTestBase {
 				CoreOptions.mavenBundle("org.apache.httpcomponents", "httpclient-osgi", "4.5.2"),
 				CoreOptions.mavenBundle("org.apache.httpcomponents", "httpasyncclient-osgi", "4.1.4"),
 				
-				CoreOptions.mavenBundle("org.smartrplace.tools", "executor-service", "0.0.1-SNAPSHOT").start(),
-				CoreOptions.mavenBundle("org.smartrplace.tools", "ssl-service", "0.0.1-SNAPSHOT").start(),
+				CoreOptions.mavenBundle("org.smartrplace.tools", "executor-service", "0.0.1").start(),
+				CoreOptions.mavenBundle("org.smartrplace.tools", "ssl-service", "0.0.1").start(),
 				
 				CoreOptions.mavenBundle("org.smartrplace.tools", "file-upload-utils", uploadVersion).start(),
 				CoreOptions.mavenBundle("org.smartrplace.tools", "file-upload-servlet-v2", uploadVersion).start(),

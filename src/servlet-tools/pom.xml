@@ -2,24 +2,27 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>org.ogema.apps</groupId>
-		<artifactId>apps-master</artifactId>
-		<version>2.2.0</version>
-	</parent>
 	
 	<groupId>org.smartrplace.tools</groupId>
 	<artifactId>servlet-tools</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>Smartrplace servlet tools</name>
 	<packaging>pom</packaging>
 	<url>http://smartrplace.de</url>
 
 	<inceptionYear>2018</inceptionYear>
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	
 	<properties>
-		<ogema.api.version>2.2.0</ogema.api.version>
+	    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
-
+	
 	<scm>
 		<connection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</connection>
 		<developerConnection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</developerConnection>
@@ -47,6 +50,7 @@
 	                <groupId>org.apache.felix</groupId>
 	                <artifactId>maven-bundle-plugin</artifactId>
 					<version>4.0.0</version>
+					<extensions>true</extensions>
 	            </plugin>
 			</plugins>
 		</pluginManagement>

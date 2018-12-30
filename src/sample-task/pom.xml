@@ -4,12 +4,23 @@
 	
 	<groupId>org.smartrplace.tools</groupId>
     <artifactId>sample-task</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
     <name>Sample task</name>
     <description>A sample task for testing the housekeeping executor service</description>
     
     <packaging>bundle</packaging>
-
+    <licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+    
+    <properties>
+	    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	
     <build>
         <plugins>
        		<plugin>
@@ -29,7 +40,7 @@
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
-				<version>3.5.0</version>
+				<version>4.0.0</version>
             </plugin>
         </plugins>
     </build>
@@ -53,7 +64,7 @@
 		<dependency>
      		<groupId>org.smartrplace.tools</groupId>
      		<artifactId>executor-service</artifactId>
-     		<version>${project.version}</version>
+     		<version>0.0.1</version>
      	</dependency>
    </dependencies>
 </project>

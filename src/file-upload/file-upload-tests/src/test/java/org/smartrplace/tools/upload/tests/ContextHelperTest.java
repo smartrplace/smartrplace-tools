@@ -15,10 +15,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpResponse;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.ogema.accesscontrol.PermissionManager;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 import org.osgi.framework.Bundle;
@@ -34,6 +36,7 @@ import org.smartrplace.tools.upload.api.FileConfiguration;
  * 
  * @author cnoelle
  */
+@RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
 public class ContextHelperTest extends TestBase {
 
@@ -86,7 +89,7 @@ public class ContextHelperTest extends TestBase {
 				CoreOptions.mavenBundle("org.ogema.ref-impl", "rest").version(OGEMA_VERSION),
 				CoreOptions.mavenBundle("org.ogema.tools", "resource-utils").version(OGEMA_VERSION),
 				
-				CoreOptions.mavenBundle("org.smartrplace.tools", "smartrplace-servlet-context", "0.0.1-SNAPSHOT").start()
+				CoreOptions.mavenBundle("org.smartrplace.tools", "smartrplace-servlet-context", "0.0.1").start()
 		};
 	}
 	
