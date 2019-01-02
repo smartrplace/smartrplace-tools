@@ -11,6 +11,13 @@
 	<url>http://smartrplace.de</url>
 
 	<inceptionYear>2018</inceptionYear>
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 
 	<scm>
 		<connection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</connection>
@@ -24,6 +31,7 @@
 		<module>file-upload</module>
 		<module>ogema-timer-utils</module>
 		<module>ogema-timeseries-rest</module>
+		<module>profiles</module>
 		<module>sample-task</module>
 		<module>schedule-management</module>
 		<module>servlet-tools</module>

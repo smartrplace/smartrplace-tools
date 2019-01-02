@@ -3,29 +3,16 @@
 
 	<modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>org.ogema.apps</groupId>
-        <artifactId>apps-master</artifactId>
-        <version>2.2.0</version>
-    </parent>
-
 	<groupId>org.smartrplace.tools</groupId>
 	<artifactId>ogema-timer-utils</artifactId>
 	<name>OGEMA timer utils</name>
 	<packaging>bundle</packaging>
-	<version>0.0.9-SNAPSHOT</version>
-
-	<repositories>
-		<repository>
-			<releases />
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-			<id>ogema-releases</id>
-			<name>ogema-releases</name>
-			<url>https://www.ogema-source.net/artifactory/libs-release</url>
-		</repository>
-	</repositories>
+	<version>0.0.9</version>
+	
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<ogema.version>2.2.0</ogema.version>
+	</properties>
 	
 	<dependencies>
 		<dependency>
@@ -36,15 +23,17 @@
 		<dependency>
 			<groupId>org.ogema.core</groupId>
 			<artifactId>api</artifactId>
+			<version>${ogema.version}</version>
 		</dependency>
 	    <dependency>
 			<groupId>org.ogema.tools</groupId>
 			<artifactId>resource-utils</artifactId>
+			<version>${ogema.version}</version>
 		</dependency>
 	    <dependency>
 			<groupId>org.ogema.ref-impl</groupId>
 			<artifactId>ogema-exam-base2</artifactId>
-			<version>${ogema.api.version}</version>
+			<version>${ogema.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -79,7 +68,21 @@
 			<plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-				<version>3.5.0</version>
+				<version>4.0.0</version>
+				<extensions>true</extensions>
+            </plugin>
+            <plugin>
+				<groupId>org.apache.servicemix.tooling</groupId>
+				<artifactId>depends-maven-plugin</artifactId>
+				<version>1.4.0</version>
+				<executions>
+					<execution>
+						<id>generate-depends-file</id>
+						<goals>
+							<goal>generate-depends-file</goal>
+						</goals>
+					</execution>
+				</executions>
             </plugin>
 		</plugins>
 		<pluginManagement>
@@ -89,22 +92,24 @@
 					<artifactId>license-maven-plugin</artifactId>
 					<version>3.0</version>
 					<configuration>
-                        <!-- see 'mvn com.mycila:license-maven-plugin:help -Ddetail=true' -->
-						<header>header.txt</header>
-                        <keywords> <!-- existing license headers contain all of these keywords -->
-                            <keyword>Smartrplace</keyword>
-                            <keyword>GNU</keyword>
-                            <keyword>License</keyword>
-                        </keywords>
+	                       <!-- see 'mvn com.mycila:license-maven-plugin:help -Ddetail=true' -->
+						<header>../header.txt</header>
+	                       <keywords> <!-- existing license headers contain all of these keywords -->
+	                           <keyword>Smartrplace</keyword>
+	                           <keyword>Apache</keyword>
+	                           <keyword>License</keyword>
+	                       </keywords>
 						<properties>
 							<year>2018</year>
 						</properties>
 						<encoding>UTF-8</encoding>
-
+	
 						<includes>
 							<include>src/**</include>
 						</includes>
 						<excludes>
+							<exclude>lib/**</exclude>
+							<exclude>libs/**</exclude>
 							<exclude>target/**</exclude>
 							<exclude>**/*.txt</exclude>
 							<exclude>**/data/**</exclude>
@@ -113,14 +118,6 @@
 							<exclude>**/.settings</exclude>
 							<exclude>**/.classpath</exclude>
 							<exclude>**/*.log</exclude>
-							<exclude>**/*.js</exclude>
-							<exclude>**/*.json</exclude>
-							<exclude>**/*.map</exclude>
-							<exclude>**/*.css</exclude>
-							<exclude>**/*.csv</exclude>
-							<exclude>**/*.svg</exclude>
-							<exclude>**/*.properties</exclude>
-							<exclude>src/main/java/org/smartrplace/tools/schedule/management/serialization/**</exclude>
 						</excludes>
 						<useDefaultExcludes>true</useDefaultExcludes>
 						<strictCheck>true</strictCheck>

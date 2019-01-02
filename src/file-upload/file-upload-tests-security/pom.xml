@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.smartrplace.tools</groupId>
 		<artifactId>file-upload</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>0.0.1</version>
 	</parent>
 	
     <artifactId>file-upload-tests-security</artifactId>
@@ -90,7 +90,7 @@
      	<dependency>
 			<groupId>org.smartrplace.tools</groupId>
 			<artifactId>smartrplace-servlet-context</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>0.0.1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

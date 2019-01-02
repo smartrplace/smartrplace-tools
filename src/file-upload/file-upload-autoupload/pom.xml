@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.smartrplace.tools</groupId>
 		<artifactId>file-upload</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>0.0.1</version>
 	</parent>
 	
     <artifactId>file-upload-autoupload</artifactId>
@@ -54,7 +54,7 @@
 		<dependency>
 			<groupId>org.smartrplace.tools</groupId>
 			<artifactId>file-upload-client-api</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>0.0.1</version>
 		</dependency>
    </dependencies>
 </project>

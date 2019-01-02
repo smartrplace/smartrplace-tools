@@ -4,7 +4,7 @@
 
 	<groupId>org.smartrplace.tools</groupId>	
     <artifactId>graaljs-osgi</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
     <name>Graal.js OSGi bundle</name>
     <description>Makes Graal.js available as scripting engine in OSGi</description>
     
@@ -19,7 +19,7 @@
     -->
     <properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<graalvm.path>C:/Users/cnoelle/temp/graalvm-ce-1.0.0-rc5</graalvm.path>
+		<graalvm.path>~/temp/graalvm-ce-1.0.0-rc5</graalvm.path>
 		<graalvm.version>1.0.0-rc5</graalvm.version>
 	</properties>
 	

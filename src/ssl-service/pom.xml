@@ -4,12 +4,20 @@
 	
 	<groupId>org.smartrplace.tools</groupId>
     <artifactId>ssl-service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
     <name>SSL service</name>
     <description>Provides a configurable SSL context by means of an OSGi service</description>
     
     <packaging>bundle</packaging>
+    <licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
     <properties>
+    	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     	<pax.exam.version>4.12.0</pax.exam.version>
     </properties>
     
@@ -43,6 +51,57 @@
                 </configuration>
             </plugin>
         </plugins>
+        <pluginManagement>
+        	<plugins>
+        		<plugin>
+					<groupId>com.mycila</groupId>
+					<artifactId>license-maven-plugin</artifactId>
+					<version>3.0</version>
+					<configuration>
+	                       <!-- see 'mvn com.mycila:license-maven-plugin:help -Ddetail=true' -->
+						<header>../header.txt</header>
+	                       <keywords> <!-- existing license headers contain all of these keywords -->
+	                           <keyword>Smartrplace</keyword>
+	                           <keyword>Apache</keyword>
+	                           <keyword>License</keyword>
+	                       </keywords>
+						<properties>
+							<year>2018</year>
+						</properties>
+						<encoding>UTF-8</encoding>
+	
+						<includes>
+							<include>src/**</include>
+						</includes>
+						<excludes>
+							<exclude>lib/**</exclude>
+							<exclude>libs/**</exclude>
+							<exclude>target/**</exclude>
+							<exclude>**/*.txt</exclude>
+							<exclude>**/data/**</exclude>
+							<exclude>**/MANIFEST.MF</exclude>
+							<exclude>**/.project</exclude>
+							<exclude>**/.settings</exclude>
+							<exclude>**/.classpath</exclude>
+							<exclude>**/*.log</exclude>
+						</excludes>
+						<useDefaultExcludes>true</useDefaultExcludes>
+						<strictCheck>true</strictCheck>
+						<failIfMissing>true</failIfMissing>
+					</configuration>
+					<executions>
+						<execution>
+							<goals>
+								<goal>format</goal>
+							</goals>
+							<!-- don't execute this plugin automatically -> need to be invoked 
+								explicitly: mvn license:[goal] [goal] := check, format or remove -->
+							<phase>validate</phase>
+						</execution>
+					</executions>
+				</plugin>
+        	</plugins>
+        </pluginManagement>
     </build>
 
     <dependencies>

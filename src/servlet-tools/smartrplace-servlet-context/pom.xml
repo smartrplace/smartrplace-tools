@@ -4,7 +4,7 @@
 	<parent>
 	    <groupId>org.smartrplace.tools</groupId>
 		<artifactId>servlet-tools</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>0.0.1</version>
 	</parent>
 	
     <artifactId>smartrplace-servlet-context</artifactId>
@@ -21,7 +21,7 @@
                 <configuration>
                 	<instructions>
                 		<Import-Package>
-                			com.google.common.cache;version="[${guava.version.min},${guava.version.max})",
+                			com.google.common.cache;version="[19,28)",
  							*
                 		</Import-Package>
                 		<Export-Package>
@@ -54,11 +54,12 @@
 		<dependency>
 			<groupId>org.ogema.ref-impl</groupId>
 			<artifactId>internal-api</artifactId>
-			<version>${ogema.api.version}</version>
+			<version>2.2.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
+			<version>20.0</version>
 		</dependency>
 		<dependency>
             <groupId>org.apache.commons</groupId>

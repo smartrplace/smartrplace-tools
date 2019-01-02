@@ -1,3 +1,18 @@
+/**
+ * ﻿Copyright 2018 Smartrplace UG
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.smartrplace.tools.exec.test;
 
 import java.io.IOException;
@@ -67,7 +82,7 @@ public class ExecServiceTest {
 				CoreOptions.mavenBundle("org.slf4j", "slf4j-api", slf4jVersion),
 				CoreOptions.mavenBundle("org.slf4j", "osgi-over-slf4j", slf4jVersion),
 				CoreOptions.mavenBundle("org.slf4j", "slf4j-simple", slf4jVersion).noStart(),
-				CoreOptions.mavenBundle("org.smartrplace.tools", "executor-service", "0.0.1-SNAPSHOT").start(),
+				CoreOptions.mavenBundle("org.smartrplace.tools", "executor-service", "0.0.1").start(),
 				CoreOptions.systemProperty("configurator.initial").value(configProperty().toString().replace('=', ':')) }; // FIXME this does not work, use config file instead
 	}
 
