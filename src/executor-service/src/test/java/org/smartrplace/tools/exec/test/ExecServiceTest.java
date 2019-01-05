@@ -49,6 +49,7 @@ import org.smartrplace.tools.exec.ExecutorConstants;
 @RunWith(PaxExam.class)
 public class ExecServiceTest {
 
+	private static final String OWN_VERSION = "0.0.2-SNAPSHOT";
 	private static final String slf4jVersion = "1.7.25";
 	
 	private static final Dictionary<String, Object> getProperties(long delay, long period) {
@@ -82,7 +83,7 @@ public class ExecServiceTest {
 				CoreOptions.mavenBundle("org.slf4j", "slf4j-api", slf4jVersion),
 				CoreOptions.mavenBundle("org.slf4j", "osgi-over-slf4j", slf4jVersion),
 				CoreOptions.mavenBundle("org.slf4j", "slf4j-simple", slf4jVersion).noStart(),
-				CoreOptions.mavenBundle("org.smartrplace.tools", "executor-service", "0.0.1").start(),
+				CoreOptions.mavenBundle("org.smartrplace.tools", "executor-service", OWN_VERSION).start(),
 				CoreOptions.systemProperty("configurator.initial").value(configProperty().toString().replace('=', ':')) }; // FIXME this does not work, use config file instead
 	}
 

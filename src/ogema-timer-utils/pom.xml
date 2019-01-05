@@ -7,12 +7,119 @@
 	<artifactId>ogema-timer-utils</artifactId>
 	<name>OGEMA timer utils</name>
 	<packaging>bundle</packaging>
-	<version>0.0.9</version>
+	<version>0.0.2-SNAPSHOT</version>
+	<description>Timer utils</description>
+	<url>http://smartrplace.de</url>
+	
+	<inceptionYear>2018</inceptionYear>
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	
+	<scm>
+		<connection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</connection>
+		<developerConnection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</developerConnection>
+		<url>https://github.com/smartrplace/smartrplace-tools</url>
+		<tag>HEAD</tag>
+	</scm>
 	
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<ogema.version>2.2.0</ogema.version>
 	</properties>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.7.0</version>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+					<showDeprecation>true</showDeprecation>
+					<showWarnings>true</showWarnings>
+					<compilerArgs>
+						<arg>-Xlint</arg>
+					</compilerArgs>
+				</configuration>
+			</plugin>
+			<plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+				<version>4.0.0</version>
+				<extensions>true</extensions>
+            </plugin>
+            <plugin>
+				<groupId>org.apache.servicemix.tooling</groupId>
+				<artifactId>depends-maven-plugin</artifactId>
+				<version>1.4.0</version>
+				<executions>
+					<execution>
+						<id>generate-depends-file</id>
+						<goals>
+							<goal>generate-depends-file</goal>
+						</goals>
+					</execution>
+				</executions>
+            </plugin>
+		</plugins>
+		<pluginManagement>
+			<plugins>
+				<!-- Source Plugin -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>3.0.1</version>
+					<executions>
+						<execution>
+							<id>attach-sources</id>
+							<goals>
+								<goal>jar-no-fork</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+
+				<!-- Javadoc Plugin -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>3.0.1</version>
+					<executions>
+						<execution>
+							<id>attach-javadocs</id>
+							<goals>
+								<goal>jar</goal>
+							</goals>
+						</execution>
+					</executions>
+					<configuration>
+				         <additionalparam>-Xdoclint:none</additionalparam>
+				         <additionalOptions>-Xdoclint:none</additionalOptions>
+				      </configuration>
+				</plugin>
+	            <plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-gpg-plugin</artifactId>
+					<version>1.6</version>
+					<executions>
+						<execution>
+							<id>sign-artifacts</id>
+							<phase>verify</phase>
+							<goals>
+								<goal>sign</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
 	
 	<dependencies>
 		<dependency>
@@ -44,97 +151,40 @@
 		</dependency>
 	</dependencies>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.7.0</version>
-				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
-					<showDeprecation>true</showDeprecation>
-					<showWarnings>true</showWarnings>
-					<compilerArgs>
-						<arg>-Xlint</arg>
-					</compilerArgs>
-				</configuration>
-			</plugin>
-			<plugin>
-            	<groupId>org.apache.felix</groupId>
-                <artifactId>maven-scr-plugin</artifactId>
-				<version>1.26.0</version>
-			</plugin>
-			<plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-				<version>4.0.0</version>
-				<extensions>true</extensions>
-            </plugin>
-            <plugin>
-				<groupId>org.apache.servicemix.tooling</groupId>
-				<artifactId>depends-maven-plugin</artifactId>
-				<version>1.4.0</version>
-				<executions>
-					<execution>
-						<id>generate-depends-file</id>
-						<goals>
-							<goal>generate-depends-file</goal>
-						</goals>
-					</execution>
-				</executions>
-            </plugin>
-		</plugins>
-		<pluginManagement>
-			<plugins>
-				<plugin>
-					<groupId>com.mycila</groupId>
-					<artifactId>license-maven-plugin</artifactId>
-					<version>3.0</version>
-					<configuration>
-	                       <!-- see 'mvn com.mycila:license-maven-plugin:help -Ddetail=true' -->
-						<header>../header.txt</header>
-	                       <keywords> <!-- existing license headers contain all of these keywords -->
-	                           <keyword>Smartrplace</keyword>
-	                           <keyword>Apache</keyword>
-	                           <keyword>License</keyword>
-	                       </keywords>
-						<properties>
-							<year>2018</year>
-						</properties>
-						<encoding>UTF-8</encoding>
-	
-						<includes>
-							<include>src/**</include>
-						</includes>
-						<excludes>
-							<exclude>lib/**</exclude>
-							<exclude>libs/**</exclude>
-							<exclude>target/**</exclude>
-							<exclude>**/*.txt</exclude>
-							<exclude>**/data/**</exclude>
-							<exclude>**/MANIFEST.MF</exclude>
-							<exclude>**/.project</exclude>
-							<exclude>**/.settings</exclude>
-							<exclude>**/.classpath</exclude>
-							<exclude>**/*.log</exclude>
-						</excludes>
-						<useDefaultExcludes>true</useDefaultExcludes>
-						<strictCheck>true</strictCheck>
-						<failIfMissing>true</failIfMissing>
-					</configuration>
-					<executions>
-						<execution>
-							<goals>
-								<goal>format</goal>
-							</goals>
-							<!-- don't execute this plugin automatically -> need to be invoked 
-								explicitly: mvn license:[goal] [goal] := check, format or remove -->
-							<phase>validate</phase>
-						</execution>
-					</executions>
-				</plugin>
-			</plugins>
-		</pluginManagement>
-	</build>
+	<profiles>
+	<!-- Sign and deploy locally, for testing. Usage: mvn -Psign install -DskipTests 
+			-o -->
+		<profile>
+			<id>sign</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<!-- Generate source, javadoc, sign and deploy. Usage: 
+				mvn -Psign-and-deploy deploy -DskipTests -Dadditionalparam=-Xdoclint:none -Dgpg.keyname=smartrplace-->
+			<id>sign-and-deploy</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

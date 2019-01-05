@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.smartrplace.tools</groupId>
 		<artifactId>profile-base</artifactId>
-		<version>0.0.1</version>
+		<version>0.0.2-SNAPSHOT</version>
 	</parent>
 	
     <artifactId>electric-heater-profile</artifactId>
@@ -50,7 +50,7 @@
      	<dependency>
 			<groupId>org.smartrplace.tools</groupId>
 			<artifactId>profile-api</artifactId>
-			<version>0.0.1</version>
+			<version>0.0.2-SNAPSHOT</version>
 		</dependency>
    </dependencies>
 </project>

@@ -4,11 +4,13 @@
 	
 	<groupId>org.smartrplace.tools</groupId>
     <artifactId>ssl-service</artifactId>
-	<version>0.0.1</version>
+	<version>0.0.2-SNAPSHOT</version>
     <name>SSL service</name>
     <description>Provides a configurable SSL context by means of an OSGi service</description>
+    <url>http://smartrplace.de</url>
     
     <packaging>bundle</packaging>
+   	<inceptionYear>2018</inceptionYear>
     <licenses>
 		<license>
 			<name>Apache License, Version 2.0</name>
@@ -20,6 +22,13 @@
     	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     	<pax.exam.version>4.12.0</pax.exam.version>
     </properties>
+    
+	<scm>
+		<connection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</connection>
+		<developerConnection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</developerConnection>
+		<url>https://github.com/smartrplace/smartrplace-tools</url>
+		<tag>HEAD</tag>
+	</scm>
     
     <build>
         <plugins>
@@ -52,56 +61,56 @@
             </plugin>
         </plugins>
         <pluginManagement>
-        	<plugins>
-        		<plugin>
-					<groupId>com.mycila</groupId>
-					<artifactId>license-maven-plugin</artifactId>
-					<version>3.0</version>
-					<configuration>
-	                       <!-- see 'mvn com.mycila:license-maven-plugin:help -Ddetail=true' -->
-						<header>../header.txt</header>
-	                       <keywords> <!-- existing license headers contain all of these keywords -->
-	                           <keyword>Smartrplace</keyword>
-	                           <keyword>Apache</keyword>
-	                           <keyword>License</keyword>
-	                       </keywords>
-						<properties>
-							<year>2018</year>
-						</properties>
-						<encoding>UTF-8</encoding>
-	
-						<includes>
-							<include>src/**</include>
-						</includes>
-						<excludes>
-							<exclude>lib/**</exclude>
-							<exclude>libs/**</exclude>
-							<exclude>target/**</exclude>
-							<exclude>**/*.txt</exclude>
-							<exclude>**/data/**</exclude>
-							<exclude>**/MANIFEST.MF</exclude>
-							<exclude>**/.project</exclude>
-							<exclude>**/.settings</exclude>
-							<exclude>**/.classpath</exclude>
-							<exclude>**/*.log</exclude>
-						</excludes>
-						<useDefaultExcludes>true</useDefaultExcludes>
-						<strictCheck>true</strictCheck>
-						<failIfMissing>true</failIfMissing>
-					</configuration>
+			<plugins>
+				<!-- Source Plugin -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>3.0.1</version>
 					<executions>
 						<execution>
+							<id>attach-sources</id>
 							<goals>
-								<goal>format</goal>
+								<goal>jar-no-fork</goal>
 							</goals>
-							<!-- don't execute this plugin automatically -> need to be invoked 
-								explicitly: mvn license:[goal] [goal] := check, format or remove -->
-							<phase>validate</phase>
 						</execution>
 					</executions>
 				</plugin>
-        	</plugins>
-        </pluginManagement>
+
+				<!-- Javadoc Plugin -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>3.0.1</version>
+					<executions>
+						<execution>
+							<id>attach-javadocs</id>
+							<goals>
+								<goal>jar</goal>
+							</goals>
+						</execution>
+					</executions>
+					<configuration>
+				         <additionalparam>-Xdoclint:none</additionalparam>
+				         <additionalOptions>-Xdoclint:none</additionalOptions>
+				      </configuration>
+				</plugin>
+	            <plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-gpg-plugin</artifactId>
+					<version>1.6</version>
+					<executions>
+						<execution>
+							<id>sign-artifacts</id>
+							<phase>verify</phase>
+							<goals>
+								<goal>sign</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
     </build>
 
     <dependencies>
@@ -182,4 +191,41 @@
 			<scope>test</scope>
 		</dependency>
    </dependencies>
+   
+    <profiles>
+	<!-- Sign and deploy locally, for testing. Usage: mvn -Psign install -DskipTests 
+			-o -->
+		<profile>
+			<id>sign</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<!-- Generate source, javadoc, sign and deploy. Usage: 
+				mvn -Psign-and-deploy deploy -DskipTests -Dadditionalparam=-Xdoclint:none -Dgpg.keyname=smartrplace -->
+			<id>sign-and-deploy</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

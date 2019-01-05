@@ -79,6 +79,7 @@ import org.junit.Before;
 @RunWith(PaxExam.class)
 public class ContextTest {
 
+	private static final String SERVLET_CONTEXT_VERSION = "0.0.2-SNAPSHOT";
 	private static final String SLF4J_VERSION = "1.7.25";
 	private static final String OGEMA_VERSION = "2.2.0";
 	private static final Path osgiStorage = Paths.get("data/osgi-storage");
@@ -278,7 +279,7 @@ public class ContextTest {
 				CoreOptions.mavenBundle("org.ops4j.pax.tinybundles", "tinybundles", "3.0.0"),
 				CoreOptions.mavenBundle("biz.aQute.bnd", "biz.aQute.bndlib", "3.5.0"),
 				
-				CoreOptions.mavenBundle("org.smartrplace.tools", "smartrplace-servlet-context", "0.0.1"),
+				CoreOptions.mavenBundle("org.smartrplace.tools", "smartrplace-servlet-context", SERVLET_CONTEXT_VERSION),
 				CoreOptions.mavenBundle("org.apache.httpcomponents", "httpclient-osgi", "4.5.6"),
 				CoreOptions.mavenBundle("org.apache.httpcomponents", "httpcore-osgi","4.4.10"), 
 				CoreOptions.mavenBundle("commons-logging", "commons-logging", "1.1.3") 

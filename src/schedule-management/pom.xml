@@ -7,7 +7,9 @@
 	<artifactId>schedule-management</artifactId>
 	<name>Schedule management</name>
 	<packaging>bundle</packaging>
-	<version>1.0.2</version>
+	<version>1.0.3-SNAPSHOT</version>
+	<description>Schedule management for OGEMA</description>
+	<url>http://smartrplace.de</url>
 	
 	<inceptionYear>2017</inceptionYear>
 	<licenses>
@@ -184,7 +186,91 @@
 						</execution>
 					</executions>
 				</plugin>
+				<!-- Source Plugin -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>3.0.1</version>
+					<executions>
+						<execution>
+							<id>attach-sources</id>
+							<goals>
+								<goal>jar-no-fork</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+
+				<!-- Javadoc Plugin -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>3.0.1</version>
+					<executions>
+						<execution>
+							<id>attach-javadocs</id>
+							<goals>
+								<goal>jar</goal>
+							</goals>
+						</execution>
+					</executions>
+					<configuration>
+				         <additionalparam>-Xdoclint:none</additionalparam>
+				         <additionalOptions>-Xdoclint:none</additionalOptions>
+				      </configuration>
+				</plugin>
+	            <plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-gpg-plugin</artifactId>
+					<version>1.6</version>
+					<executions>
+						<execution>
+							<id>sign-artifacts</id>
+							<phase>verify</phase>
+							<goals>
+								<goal>sign</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 	</build>
+	
+	    <profiles>
+	<!-- Sign and deploy locally, for testing. Usage: mvn -Psign install -DskipTests 
+			-o -->
+		<profile>
+			<id>sign</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<!-- Generate source, javadoc, sign and deploy. Usage: 
+				mvn -Psign-and-deploy deploy -DskipTests -Dadditionalparam=-Xdoclint:none -Dgpg.keyname=smartrplace-->
+			<id>sign-and-deploy</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
