@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<artifactId>humidity-warning</artifactId>
+	<groupId>org.smartrplace.apps</groupId>
+	<name>Humidity warning</name>
+	<version>0.0.1</version>
+	<description>Generate warnings when the humidity in a room violates a threshold.</description>
+
+	<packaging>bundle</packaging>
+	<url>http://smartrplace.de</url>
+
+	<inceptionYear>2018</inceptionYear>
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	<scm>
+		<connection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</connection>
+		<developerConnection>scm:git:git://github.com/smartrplace/smartrplace-tools.git</developerConnection>
+		<url>https://github.com/smartrplace/smartrplace-tools</url>
+		<tag>0.0.1</tag>
+	</scm>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<osgi.version>6.0.0</osgi.version>
+		<ogema.version>2.2.0</ogema.version>
+	</properties>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>4.1.0</version>
+				<extensions>true</extensions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+					<showDeprecation>true</showDeprecation>
+					<showWarnings>true</showWarnings>
+					<compilerArgs>
+						<arg>-Xlint</arg>
+					</compilerArgs>
+				</configuration>
+			</plugin>
+		</plugins>
+		<pluginManagement>
+			<plugins>
+				<!-- Source Plugin -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>3.0.1</version>
+					<executions>
+						<execution>
+							<id>attach-sources</id>
+							<goals>
+								<goal>jar-no-fork</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+				<!-- Javadoc Plugin -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>3.0.1</version>
+					<executions>
+						<execution>
+							<id>attach-javadocs</id>
+							<goals>
+								<goal>jar</goal>
+							</goals>
+						</execution>
+					</executions>
+					<configuration>
+						<additionalparam>-Xdoclint:none</additionalparam>
+						<additionalOptions>-Xdoclint:none</additionalOptions>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-gpg-plugin</artifactId>
+					<version>1.6</version>
+					<executions>
+						<execution>
+							<id>sign-artifacts</id>
+							<phase>verify</phase>
+							<goals>
+								<goal>sign</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.osgi</groupId>
+			<artifactId>osgi.core</artifactId>
+			<version>${osgi.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.osgi</groupId>
+			<artifactId>osgi.cmpn</artifactId>
+			<version>${osgi.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.ogema.core</groupId>
+			<artifactId>api</artifactId>
+			<version>${ogema.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.ogema.core</groupId>
+			<artifactId>models</artifactId>
+			<version>${ogema.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.ogema.widgets</groupId>
+			<artifactId>ogema-js-bundle</artifactId>
+			<version>${ogema.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.ogema.widgets</groupId>
+			<artifactId>widget-collection</artifactId>
+			<version>${ogema.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.ogema.widgets</groupId>
+			<artifactId>widget-experimental</artifactId>
+			<version>${ogema.version}</version>
+		</dependency>
+	</dependencies>
+
+	<profiles>
+		<!-- Sign and deploy locally, for testing. Usage: mvn -Psign install -DskipTests 
+			-o -->
+		<profile>
+			<id>sign</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<!-- Generate source, javadoc, sign and deploy. Usage: 
+				mvn -Psign-and-deploy deploy -DskipTests -Dadditionalparam=-Xdoclint:none -Dgpg.keyname=smartrplace -->
+			<id>sign-and-deploy</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>
