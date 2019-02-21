@@ -22,12 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.apache.felix.scr.annotations.ReferencePolicy;
-import org.apache.felix.scr.annotations.References;
-import org.apache.felix.scr.annotations.Service;
 import org.ogema.core.application.Application;
 import org.ogema.core.application.ApplicationManager;
 import org.ogema.core.channelmanager.measurements.FloatValue;
@@ -38,6 +32,11 @@ import org.ogema.core.model.simple.FloatResource;
 import org.ogema.core.timeseries.ReadOnlyTimeSeries;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.smartrplace.tools.schedule.management.imports.DataGenerator;
 import org.smartrplace.tools.schedule.management.imports.FileBasedDataGenerator;
 import org.smartrplace.tools.schedule.management.imports.OgemaDataSource;
@@ -53,30 +52,10 @@ import de.iwes.widgets.api.widgets.WidgetPage;
 /**
  * This is an extensible application. Register services 
  * {@link DataGenerator} and/or {@link TimeSeriesPersistence} 
- * for extensions. See for instance the SlotsDbStandalone app.
+ * for extensions.
  */
-@Component
-@Service(Application.class)
-@References({
-	@Reference(cardinality=ReferenceCardinality.OPTIONAL_MULTIPLE, 
-			policy=ReferencePolicy.DYNAMIC, 
-			referenceInterface=DataGenerator.class,
-			bind="addSource",
-			unbind="removeSource",
-			name="source"),
-	@Reference(cardinality=ReferenceCardinality.OPTIONAL_MULTIPLE, 
-			policy=ReferencePolicy.DYNAMIC, 
-			referenceInterface=DataProvider.class,
-			bind="addGenericSource",
-			unbind="removeGenericSource",
-			name="provider"),
-	@Reference(cardinality=ReferenceCardinality.OPTIONAL_MULTIPLE, 
-			policy=ReferencePolicy.DYNAMIC, 
-			referenceInterface=TimeSeriesPersistence.class,
-			bind="addTarget",
-			unbind="removeTarget",
-			name="target")
-})
+// FIXME avoid retrieving service instances, get ComponentContextObject wrappers instead
+@Component(service=Application.class)
 public class ScheduleManagementApp implements Application {
 
 	private DataSourceFactory dataSources;
@@ -154,6 +133,15 @@ public class ScheduleManagementApp implements Application {
 		unregisterFrameworkAdminApp();
 	}
 	
+	@Reference(
+			cardinality=ReferenceCardinality.MULTIPLE,
+			policy=ReferencePolicy.DYNAMIC,
+			policyOption=ReferencePolicyOption.GREEDY,
+			service=DataProvider.class,
+			bind="addGenericSource",
+			unbind="removeGenericSource",
+			name="provider"
+	)
 	protected synchronized void addGenericSource(DataProvider<?> provider) {
 		if (am == null) {
 			sourceQueue2.add(provider);
@@ -167,6 +155,15 @@ public class ScheduleManagementApp implements Application {
 		dataSources2.remove(provider);
 	}
 
+	@Reference(
+			cardinality=ReferenceCardinality.MULTIPLE,
+			policy=ReferencePolicy.DYNAMIC,
+			policyOption=ReferencePolicyOption.GREEDY,
+			service=DataGenerator.class,
+			bind="addSource",
+			unbind="removeSource",
+			name="source"
+	)
 	protected synchronized void addSource(DataGenerator source) {
 		if (am == null) {
 			sourceQueue.add(source);
@@ -188,6 +185,15 @@ public class ScheduleManagementApp implements Application {
 		}
 	}
 	
+	@Reference(
+			cardinality=ReferenceCardinality.MULTIPLE,
+			policy=ReferencePolicy.DYNAMIC,
+			policyOption=ReferencePolicyOption.GREEDY,
+			service=TimeSeriesPersistence.class,
+			bind="addTarget",
+			unbind="removeTarget",
+			name="target"
+	)
 	protected synchronized void addTarget(TimeSeriesPersistence target) {
 		if (am == null) {
 			targetQueue.add(target);

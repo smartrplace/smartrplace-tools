@@ -29,25 +29,20 @@
 	
 	<properties>
 	    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	    <osgi.version>5.0.0</osgi.version>
+	    <osgi.version>6.0.0</osgi.version>
 		<ogema.version>2.2.0</ogema.version>
 	</properties>
 	
 	<dependencies>
 		<dependency>
 			<groupId>org.osgi</groupId>
-			<artifactId>org.osgi.core</artifactId>
+			<artifactId>osgi.core</artifactId>
 			<version>${osgi.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.osgi</groupId>
-			<artifactId>org.osgi.compendium</artifactId>
+			<artifactId>osgi.cmpn</artifactId>
 			<version>${osgi.version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>org.apache.felix</groupId>
-		    <artifactId>org.apache.felix.scr.annotations</artifactId>
-		    <version>1.11.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.ogema.core</groupId>
@@ -109,11 +104,6 @@
 						<arg>-Xlint</arg>
 					</compilerArgs>
 				</configuration>
-			</plugin>
-			<plugin>
-            	<groupId>org.apache.felix</groupId>
-                <artifactId>maven-scr-plugin</artifactId>
-				<version>1.26.0</version>
 			</plugin>
 			<plugin>
                 <groupId>org.apache.felix</groupId>

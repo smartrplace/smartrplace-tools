@@ -5,7 +5,7 @@
 	<artifactId>humidity-warning</artifactId>
 	<groupId>org.smartrplace.apps</groupId>
 	<name>Humidity warning</name>
-	<version>0.0.1</version>
+	<version>0.0.1-SNAPSHOT</version>
 	<description>Generate warnings when the humidity in a room violates a threshold.</description>
 
 	<packaging>bundle</packaging>
