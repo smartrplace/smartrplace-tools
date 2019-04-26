@@ -70,7 +70,9 @@ import org.smartrplace.tools.exec.ExecutorConstants;
 				"osgi.command.function=getIdleTime",
 				"osgi.command.function=getTasks",
 				"osgi.command.function=isTaskAlive",
+				"osgi.command.function=isTaskRunning",
 				"osgi.command.function=restartTask",
+				"osgi.command.function=runTask",
 				"osgi.command.function=stopTask"
 		}
 )
@@ -204,7 +206,7 @@ public class HousekeepingExecService {
 			.collect(Collectors.toList());
 	}
 	
-	@Descriptor("Check if a task with the provided identity hash code is still running.")
+	@Descriptor("Check if a task with the provided identity hash code is still active.")
 	public Map<Runnable, Boolean> isTaskAlive (
 			@Descriptor("The hash code of the task to be checked. If absent, all tasks will be checked.")
 			@Parameter(names= {"-h", "--hashcode"}, absentValue="-1")
@@ -215,6 +217,34 @@ public class HousekeepingExecService {
 				.filter(entry -> System.identityHashCode(entry.getKey()) == identityHashCode);
 		return stream
 				.collect(Collectors.toMap(entry -> entry.getKey().getTask(), entry -> !entry.getValue().isCancelled()));
+	}
+	
+	@Descriptor("Check if a task with the provided identity hash code is still running.")
+	public void runTask (
+			@Descriptor("The hash code of the task to be run. If absent, the first task found will be run.")
+			@Parameter(names= {"-h", "--hashcode"}, absentValue="-1")
+			int identityHashCode) {
+		Stream<TaskWrapper> stream = futures.keySet().stream()
+				.filter(task -> !task.isRunning());
+		if (identityHashCode != -1)
+			stream = stream
+				.filter(task -> System.identityHashCode(task) == identityHashCode);
+		stream
+			.findAny()
+			.ifPresent(exec::submit);
+	}
+	
+	@Descriptor("Check if a task with the provided identity hash code is currently running.")
+	public Map<Runnable, Boolean> isTaskRunning (
+			@Descriptor("The hash code of the task to be checked. If absent, all tasks will be checked.")
+			@Parameter(names= {"-h", "--hashcode"}, absentValue="-1")
+			int identityHashCode) {
+		Stream<TaskWrapper> stream = futures.keySet().stream();
+		if (identityHashCode != -1)
+			stream = stream
+				.filter(task -> System.identityHashCode(task) == identityHashCode);
+		return stream
+				.collect(Collectors.toMap(entry -> entry.getTask(), entry -> entry.isRunning()));
 	}
 	
 	@Descriptor("Restart all tasks (with the provided identity hash code, if any) which have been cancelled. Returns the "

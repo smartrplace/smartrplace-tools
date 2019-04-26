@@ -16,12 +16,14 @@
 package org.smartrplace.tools.exec.impl;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 class TaskWrapper implements Runnable {
 
 	private final Runnable task;
 	private final AtomicLong executionMillis = new AtomicLong(0);
+	private final AtomicBoolean isRunning = new AtomicBoolean(false);
 	
 	TaskWrapper(Runnable task) {
 		this.task = task;
@@ -30,10 +32,12 @@ class TaskWrapper implements Runnable {
 	@Override
 	public void run() {
 		final long nanos = System.nanoTime();
+		isRunning.set(true);
 		try {
 			task.run();
 		} finally {
 			this.executionMillis.getAndAdd((System.nanoTime() - nanos) / 1000000);
+			isRunning.set(false);
 		}
 	}
 	
@@ -43,6 +47,10 @@ class TaskWrapper implements Runnable {
 	
 	public long getExecutionTimeMillis() {
 		return executionMillis.get();
+	}
+	
+	public boolean isRunning() {
+		return isRunning.get();
 	}
 
 	@Override
