@@ -19,6 +19,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -68,6 +69,7 @@ import org.smartrplace.tools.exec.ExecutorConstants;
 				"osgi.command.function=getExecTime",
 				"osgi.command.function=getExecTimeFraction",
 				"osgi.command.function=getIdleTime",
+				"osgi.command.function=getRunningTask",
 				"osgi.command.function=getTasks",
 				"osgi.command.function=isTaskAlive",
 				"osgi.command.function=isTaskRunning",
@@ -245,6 +247,15 @@ public class HousekeepingExecService {
 				.filter(task -> System.identityHashCode(task) == identityHashCode);
 		return stream
 				.collect(Collectors.toMap(entry -> entry.getTask(), entry -> entry.isRunning()));
+	}
+	
+	@Descriptor("Get the currently running task, if any")
+	public Runnable getRunningTask() {
+		return futures.keySet().stream()
+			.filter(TaskWrapper::isRunning)
+			.map(TaskWrapper::getTask)
+			.findAny()
+			.orElse(null);
 	}
 	
 	@Descriptor("Restart all tasks (with the provided identity hash code, if any) which have been cancelled. Returns the "
