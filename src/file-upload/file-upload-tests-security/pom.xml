@@ -25,6 +25,7 @@
             <plugin>
             	<groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
                 <!-- 
                 <configuration>
                     <argLine>
@@ -47,6 +48,31 @@
             </plugin>
         </plugins>
     </build>
+    
+    <profiles>
+        <profile>
+            <id>surefire-java9+</id>
+            <activation>
+                <jdk>(9,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.19.1</version>
+                        <configuration>
+                            <argLine>
+                                -ea
+                                -Djava.security.policy=config/all.policy -Dorg.ogema.security=on
+                                --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
+                            </argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <dependencies>
     <!-- test only dependencies below -->
@@ -165,7 +191,7 @@
 		<dependency>
 			<groupId>org.apache.felix</groupId>
 			<artifactId>org.apache.felix.framework</artifactId>
-			<version>6.0.1</version>
+			<version>6.0.3</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

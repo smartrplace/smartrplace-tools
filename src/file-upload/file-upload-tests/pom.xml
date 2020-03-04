@@ -25,16 +25,8 @@
             <plugin>
           		<groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
                 <configuration>
-                    <!-- requires Java >= 9 -->
-                    <!-- 
-                    <argLine>
-                        -ea
-	                    -illegal-access=warn
-	                    -add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
-	                    -add-modules java.xml.bind,java.xml.ws.annotation
-                    </argLine>
-                    -->
                     <trimStackTrace>false</trimStackTrace>
                 </configuration>
             </plugin>
@@ -174,18 +166,16 @@
 		    	- with native container it does not support running all test classes at once; fwk extension bundles work
 		    	- the forked container works, but does not support framework extension bundles (which are required with Felix if one needs ConditionalPermissionAdmin)
 		 -->
-		 <!-- 
-		<dependency>
+		<!-- dependency>
 		    <groupId>org.eclipse.tycho</groupId>
 		    <artifactId>org.eclipse.osgi</artifactId>
 		    <version>3.13.0.v20180226-1711</version>
 		    <scope>test</scope>
-		</dependency>
-		-->
+		</dependency -->
 		<dependency>
 			<groupId>org.apache.felix</groupId>
 			<artifactId>org.apache.felix.framework</artifactId>
-			<version>6.0.1</version>
+			<version>6.0.3</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

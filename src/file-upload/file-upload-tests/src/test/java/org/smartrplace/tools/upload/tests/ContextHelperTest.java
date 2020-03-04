@@ -71,7 +71,7 @@ public class ContextHelperTest extends TestBase {
 
 	public Option[] ogemaBundles() {
 		return new Option[] {
-				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.framework.security", "2.6.1"), // FIXME start only when using Felix fwk bundle
+				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.framework.security", "2.6.1").noStart(), // FIXME start only when using Felix fwk bundle
 				CoreOptions.mavenBundle("org.ogema.ref-impl", "permission-admin").version(OGEMA_VERSION).startLevel(1),
 				CoreOptions.mavenBundle("org.eclipse.jetty", "jetty-servlets", "9.4.11.v20180605"),
 				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.useradmin.filestore", "1.0.2"),

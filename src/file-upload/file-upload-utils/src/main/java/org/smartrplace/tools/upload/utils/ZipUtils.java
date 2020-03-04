@@ -117,7 +117,7 @@ public class ZipUtils {
 	 * @throws IOException
 	 */
 	public static void parseZipFile(final Path zipFile, final Consumer<Path> fileListener) throws IOException {
-		try (FileSystem fs = FileSystems.newFileSystem(zipFile, null)) {
+		try (FileSystem fs = FileSystems.newFileSystem(zipFile, (ClassLoader) null)) {
 			final Path root = fs.getPath("/");
 			// the more convenient Files.walk method sometimes fails with funny IOExceptions... 
 			// see https://stackoverflow.com/questions/14654737/nosuchfileexception-while-walking-files-tree-inside-a-zip-using-java-nio

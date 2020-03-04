@@ -31,7 +31,7 @@ import org.ogema.core.model.simple.StringResource;
 import org.ogema.core.model.simple.TimeResource;
 import org.ogema.exam.latest.LatestVersionsTestBase;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
-import org.ops4j.pax.exam.spi.reactors.PerClass;
+import org.ops4j.pax.exam.spi.reactors.PerMethod;
 import org.smartrplace.tools.timer.utils.PeriodTimerPersistent;
 import org.smartrplace.tools.timer.utils.model.TimerData;
 
@@ -39,7 +39,7 @@ import org.smartrplace.tools.timer.utils.model.TimerData;
  * Note: these tests are timing sensitive... therefore it cannot be guaranteed
  * that they always succeed.
  */
-@ExamReactorStrategy(PerClass.class)
+@ExamReactorStrategy(PerMethod.class)
 public class PersistentTimerTest extends LatestVersionsTestBase {
 	
 	public PersistentTimerTest() {

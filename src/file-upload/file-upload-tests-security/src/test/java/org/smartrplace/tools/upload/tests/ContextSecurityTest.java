@@ -112,7 +112,7 @@ public class ContextSecurityTest extends SecurityTestBase {
 
 	public Option[] ogemaBundles() {
 		return new Option[] {
-				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.framework.security", "2.6.0"),
+				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.framework.security", "2.6.0").noStart(),
 				CoreOptions.mavenBundle("org.ogema.ref-impl", "permission-admin").version(OGEMA_VERSION).startLevel(1),
 				CoreOptions.mavenBundle("org.eclipse.jetty", "jetty-servlets", "9.4.11.v20180605"),
 				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.useradmin.filestore", "1.0.2"),
@@ -125,7 +125,6 @@ public class ContextSecurityTest extends SecurityTestBase {
 				CoreOptions.mavenBundle("org.json", "json", "20170516"),
 				CoreOptions.mavenBundle("com.google.guava", "guava", "23.0"),
 				
-				CoreOptions.mavenBundle("org.ogema.core", "api", OGEMA_VERSION),
 				CoreOptions.mavenBundle("org.ogema.core", "models").version(OGEMA_VERSION),
 				CoreOptions.mavenBundle("org.ogema.core", "api").version(OGEMA_VERSION),
 				CoreOptions.mavenBundle("org.ogema.tools", "memory-timeseries").version(OGEMA_VERSION),

@@ -99,9 +99,18 @@ class TestBase {
 				CoreOptions.frameworkProperty(Constants.FRAMEWORK_STORAGE_CLEAN).value(Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT),
 				CoreOptions.frameworkProperty(Constants.FRAMEWORK_BSNVERSION).value(Constants.FRAMEWORK_BSNVERSION_MULTIPLE),
 				CoreOptions.vmOption("-ea"), 
-				CoreOptions.when(getJavaVersion() >= 9).useOptions(
+				CoreOptions.when(getJavaVersion() == 9).useOptions(
 						CoreOptions.vmOption("--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED"),
 						CoreOptions.vmOption("--add-modules=java.xml.bind,java.xml.ws.annotation")
+					),
+                CoreOptions.when(getJavaVersion() > 9).useOptions(
+						CoreOptions.vmOption("--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED"),
+						CoreOptions.mavenBundle("com.sun.activation", "javax.activation", "1.2.0"),
+                        CoreOptions.mavenBundle("javax.annotation", "javax.annotation-api", "1.3.2"),
+                        CoreOptions.mavenBundle("javax.xml.bind", "jaxb-api", "2.4.0-b180830.0359"),
+                        CoreOptions.mavenBundle("org.eclipse.persistence", "org.eclipse.persistence.asm", "2.7.3"),
+                        CoreOptions.mavenBundle("org.eclipse.persistence", "org.eclipse.persistence.core", "2.7.3"),
+                        CoreOptions.mavenBundle("org.eclipse.persistence", "org.eclipse.persistence.moxy", "2.7.3")
 					),
 				CoreOptions.junitBundles(),
 				CoreOptions.mavenBundle("org.apache.felix", "org.apache.felix.scr", "2.1.6"),

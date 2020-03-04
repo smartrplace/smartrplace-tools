@@ -218,9 +218,18 @@ public class ContextTest {
 				// these four options are required with the forked launcher; otherwise they are in the surefire plugin
 				CoreOptions.vmOption("-Djava.security.policy=config/all.policy"),
 				CoreOptions.vmOption("-Dorg.ogema.security=on"),
-				CoreOptions.when(getJavaVersion() >= 9).useOptions(
+				CoreOptions.when(getJavaVersion() == 9 || getJavaVersion() == 10).useOptions(
 					CoreOptions.vmOption("--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED"),
 					CoreOptions.vmOption("--add-modules=java.xml.bind,java.xml.ws.annotation")
+				),
+				CoreOptions.when(getJavaVersion() > 10).useOptions(
+				CoreOptions.vmOption("--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED"),// using extension bundles in felix
+					CoreOptions.mavenBundle("com.sun.activation", "javax.activation", "1.2.0"),
+					CoreOptions.mavenBundle("javax.annotation", "javax.annotation-api", "1.3.2"),
+					CoreOptions.mavenBundle("javax.xml.bind", "jaxb-api", "2.4.0-b180830.0359"),
+					CoreOptions.mavenBundle("org.eclipse.persistence", "org.eclipse.persistence.asm", "2.7.3"),
+					CoreOptions.mavenBundle("org.eclipse.persistence", "org.eclipse.persistence.core", "2.7.3"),
+					CoreOptions.mavenBundle("org.eclipse.persistence", "org.eclipse.persistence.moxy", "2.7.3")
 				),
 				//
 				CoreOptions.junitBundles(),
