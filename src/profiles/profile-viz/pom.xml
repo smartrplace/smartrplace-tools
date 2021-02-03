@@ -9,6 +9,7 @@
 	</parent>
 
     <artifactId>profile-viz</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
     <name>Profiles visualization</name>
     <description>Profiles visualization</description>
     

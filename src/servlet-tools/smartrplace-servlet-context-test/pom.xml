@@ -8,6 +8,7 @@
 	</parent>
 	
     <artifactId>smartrplace-servlet-context-test</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
     <name>Smartrplace servlet context test</name>
     <description>Smartrplace servlet context test</description>
     

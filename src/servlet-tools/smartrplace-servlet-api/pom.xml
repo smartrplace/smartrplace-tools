@@ -8,6 +8,7 @@
 	</parent>
 	
     <artifactId>smartrplace-servlet-api</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
     <name>Smartrplace servlet API</name>
     <description>Constants for the Smartrplace servlet context helper</description>
     

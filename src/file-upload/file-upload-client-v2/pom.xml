@@ -8,6 +8,7 @@
 	</parent>
 	
     <artifactId>file-upload-client-v2</artifactId>
+    <version>0.0.1</version>
     <name>Fileupload client</name>
     
     <packaging>bundle</packaging>

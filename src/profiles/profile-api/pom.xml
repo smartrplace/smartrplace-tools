@@ -9,6 +9,7 @@
 	</parent>
 	
     <artifactId>profile-api</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
     <name>Profiles API</name>
     <description>Profiles</description>
     

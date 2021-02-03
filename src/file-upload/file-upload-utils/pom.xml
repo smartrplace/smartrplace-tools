@@ -8,6 +8,7 @@
 	</parent>
 	
     <artifactId>file-upload-utils</artifactId>
+    <version>0.0.1</version>
     <name>Fileupload Utils</name>
     <description>Fileupload Utils shared between client and server</description>
     

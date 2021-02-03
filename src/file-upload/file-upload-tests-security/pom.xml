@@ -9,7 +9,7 @@
 	
     <artifactId>file-upload-tests-security</artifactId>
     <name>Fileupload security tests</name>
-    
+    <version>0.0.1</version>    
     <packaging>bundle</packaging>
     
     <properties>

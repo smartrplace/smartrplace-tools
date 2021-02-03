@@ -9,6 +9,7 @@
 	</parent>
 	
     <artifactId>profile-preferences</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
     <name>Profiles Preferences</name>
     <description>Profile preferences</description>
     

@@ -8,6 +8,7 @@
 	</parent>
 	
     <artifactId>file-upload-autoupload</artifactId>
+    <version>0.0.1</version>
     <name>Auto fileupload</name>
 	<description>Upload files periodically</description>
     

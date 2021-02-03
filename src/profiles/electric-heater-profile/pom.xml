@@ -9,6 +9,7 @@
 	</parent>
 	
     <artifactId>electric-heater-profile</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
     <name>Electric heater profile</name>
     <description>Electric heater profile</description>
     

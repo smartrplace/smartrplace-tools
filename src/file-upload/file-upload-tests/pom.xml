@@ -8,6 +8,7 @@
 	</parent>
 	
     <artifactId>file-upload-tests</artifactId>
+    <version>0.0.1</version>
     <name>Fileupload tests</name>
     
     <packaging>bundle</packaging>

@@ -8,6 +8,7 @@
 	</parent>
 	
     <artifactId>file-upload-client-api</artifactId>
+    <version>0.0.1</version>
     <name>Fileupload client API</name>
 
     <dependencies>

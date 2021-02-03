@@ -8,6 +8,7 @@
 	</parent>
 	
     <artifactId>file-upload-servlet-v2</artifactId>
+    <version>0.0.1</version>
     <name>Fileupload servlet</name>
     <description>Allows clients to upload files to this gateway</description>
     
