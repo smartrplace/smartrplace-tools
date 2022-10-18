@@ -28,7 +28,7 @@
 	<properties>
 	    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	    <executor.version>0.0.1</executor.version>
-	    <jackson.version>2.9.0</jackson.version>
+	    <jackson.version>2.13.4.1</jackson.version>
 	    <osgi.version>7.0.0</osgi.version>
 		<ogema.version>2.2.0</ogema.version>
 		<ssl.version>0.0.1</ssl.version>
